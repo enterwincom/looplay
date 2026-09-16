@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+<title>My LoopTube - YouTube AB Loop</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;width:100%;min-height:100%;font-family:Arial,"Noto Sans KR",sans-serif;background:#f5f6f8;color:#222}
+body{overflow-x:hidden}
+header{background:#fff;border-top:4px solid #333;border-bottom:1px solid #ddd;padding:14px 20px}
+.brand{font-size:24px;font-weight:700}.sub{font-size:13px;color:#777;margin-top:4px}
+.container{width:100%;max-width:1050px;margin:0 auto;padding:20px}
+.inputbox{display:flex;gap:8px;margin-bottom:16px}
+input[type=text]{min-width:0;flex:1;padding:13px;border:1px solid #bbb;border-radius:7px;font-size:15px}
+button{border:1px solid #aaa;background:#fff;border-radius:7px;padding:10px 13px;cursor:pointer;font-size:14px;min-height:42px}
+button:hover{background:#eee}
+.primary{background:#333;color:#fff;border-color:#333}
+.player{background:#111;border-radius:8px;overflow:hidden;width:100%}
+#player{width:100%;aspect-ratio:16/9}
+.controls,.saved{background:#fff;margin-top:14px;padding:16px;border-radius:8px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+.label{font-weight:700;min-width:65px}
+.time{font-variant-numeric:tabular-nums;background:#f0f1f3;padding:9px 10px;border-radius:5px;min-width:54px;text-align:center}
+.range{width:220px}
+.speed{display:flex;flex-wrap:wrap;gap:6px}
+.speed button.active{background:#333;color:#fff}
+.note{width:100%;min-height:90px;padding:10px;border:1px solid #ccc;border-radius:6px;resize:vertical;font-size:14px}
+.help{font-size:13px;color:#666;line-height:1.7}
+.savedItem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eee}
+.savedItem>span:first-child{min-width:0;overflow-wrap:anywhere}
+.savedItem>span:last-child{display:flex;gap:5px;flex-shrink:0}
+@media(max-width:700px){
+  header{padding:13px 14px}
+  .brand{font-size:21px}.sub{font-size:12px}
+  .container{padding:12px 10px}
+  .inputbox{gap:6px}
+  input[type=text]{font-size:14px;padding:12px}
+  .inputbox button{padding:10px 11px;white-space:nowrap}
+  .player{border-radius:5px}
+  .controls,.saved{padding:12px;margin-top:10px;border-radius:6px}
+  .row{gap:6px;margin:8px 0}
+  .label{width:100%;min-width:100%;font-size:13px;margin-bottom:1px}
+  button{flex:1;min-width:75px;padding:9px 8px;font-size:13px}
+  .time{flex:0 0 auto}
+  .speed{width:100%}.speed button{min-width:0}
+  .note{font-size:14px}
+  .savedItem{align-items:flex-start;flex-direction:column}
+  .savedItem>span:last-child{width:100%}
+  .savedItem>span:last-child button{flex:1}
+}
+@media(max-width:420px){
+  .inputbox{flex-direction:column}
+  .inputbox button{width:100%}
+  button{min-height:40px}
+  .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+  .row .label{grid-column:1/-1}
+  .row .time{justify-self:start}
+  .row .note{grid-column:1/-1}
+  .row .speed{grid-column:1/-1}
+  .speed{display:grid;grid-template-columns:repeat(3,1fr)}
+  .speed button{width:100%}
+  .savedItem>span:last-child{display:grid;grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">↻ My LoopTube</div>
+  <div class="sub">YouTube 영상을 원하는 구간으로 반복 연습하세요</div>
+</header>
+
+<main class="container">
+  <div class="inputbox">
+    <input id="url" type="text" placeholder="YouTube 영상 URL을 붙여넣으세요">
+    <button class="primary" onclick="loadVideo()">영상 불러오기</button>
+  </div>
+
+  <div class="player"><div id="player"></div></div>
+
+  <section class="controls">
+    <div class="row">
+      <span class="label">구간</span>
+      <button onclick="setA()">A 설정</button>
+      <span id="aTime" class="time">0:00</span>
+      <button onclick="setB()">B 설정</button>
+      <span id="bTime" class="time">0:00</span>
+      <button class="primary" onclick="toggleLoop()">AB 반복</button>
+      <button onclick="clearLoop()">반복 해제</button>
+    </div>
+
+    <div class="row">
+      <span class="label">재생</span>
+      <button onclick="playVideo()">▶ 재생</button>
+      <button onclick="pauseVideo()">Ⅱ 일시정지</button>
+      <button onclick="restartA()">A부터</button>
+      <button onclick="restartVideo()">처음부터</button>
+    </div>
+
+    <div class="row">
+      <span class="label">속도</span>
+      <div class="speed">
+        <button onclick="setSpeed(.5)">0.5x</button>
+        <button onclick="setSpeed(.75)">0.75x</button>
+        <button class="active" onclick="setSpeed(1)">1x</button>
+        <button onclick="setSpeed(1.25)">1.25x</button>
+        <button onclick="setSpeed(1.5)">1.5x</button>
+        <button onclick="setSpeed(2)">2x</button>
+      </div>
+    </div>
+
+    <div class="row">
+      <span class="label">미세 이동</span>
+      <button onclick="seek(-5)">-5초</button>
+      <button onclick="seek(-1)">-1초</button>
+      <button onclick="seek(.5)">+0.5초</button>
+      <button onclick="seek(1)">+1초</button>
+      <button onclick="seek(5)">+5초</button>
+    </div>
+
+    <div class="row">
+      <span class="label">메모</span>
+      <textarea id="note" class="note" placeholder="연습할 부분이나 메모를 입력하세요."></textarea>
+    </div>
+
+    <div class="row">
+      <button class="primary" onclick="saveSetting()">현재 설정 저장</button>
+      <button onclick="clearSaved()">저장된 설정 삭제</button>
+    </div>
+  </section>
+
+  <section class="saved">
+    <strong>키보드 단축키</strong>
+    <div class="help">
+      Ctrl + L : AB 반복 시작/해제<br>
+      Ctrl + P : 재생/일시정지<br>
+      Ctrl + B : A 지점 설정<br>
+      Shift + B : B 지점 설정<br>
+      J / L : 5초 뒤로 / 앞으로<br>
+      ↑ / ↓ : 재생속도 조절
+    </div>
+  </section>
+
+  <section class="saved">
+    <strong>저장된 설정</strong>
+    <div id="savedList" class="help">저장된 설정이 없습니다.</div>
+  </section>
+</main>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+let player;
+let videoId = "";
+let A = 0;
+let B = null;
+let looping = false;
+let timer = null;
+
+function extractId(url){
+  try{
+    const u = new URL(url);
+    if(u.hostname.includes("youtu.be")) return u.pathname.substring(1).split("/")[0];
+    if(u.hostname.includes("youtube.com")){
+      if(u.searchParams.get("v")) return u.searchParams.get("v");
+      const parts=u.pathname.split("/");
+      const i=parts.indexOf("embed");
+      if(i>=0) return parts[i+1];
+      const s=parts.indexOf("shorts");
+      if(s>=0) return parts[s+1];
+    }
+  }catch(e){}
+  const m=url.match(/[?&]v=([^&]+)/);
+  return m ? m[1] : null;
+}
+
+function onYouTubeIframeAPIReady(){
+  player=new YT.Player("player",{
+    videoId:"",
+    playerVars:{rel:0,playsinline:1},
+    events:{onStateChange:onStateChange}
+  });
+}
+
+function loadVideo(){
+  const id=extractId(document.getElementById("url").value.trim());
+  if(!id){alert("올바른 YouTube URL을 입력하세요.");return;}
+  videoId=id; A=0; B=null; looping=false;
+  updateTimes();
+  player.loadVideoById(id);
+}
+
+function onStateChange(e){
+  if(e.data===YT.PlayerState.PLAYING) startMonitor();
+  else stopMonitor();
+}
+
+function startMonitor(){
+  stopMonitor();
+  timer=setInterval(()=>{
+    if(!player || !looping || B===null) return;
+    const t=player.getCurrentTime();
+    if(t>=B) player.seekTo(A,true);
+  },100);
+}
+function stopMonitor(){if(timer){clearInterval(timer);timer=null}}
+
+function setA(){if(!player)return; A=player.getCurrentTime(); if(B!==null && A>=B)B=null; updateTimes();}
+function setB(){if(!player)return; B=player.getCurrentTime(); if(B<=A){alert("B 지점은 A 지점보다 뒤에 있어야 합니다.");B=null;} updateTimes();}
+function toggleLoop(){
+  if(B===null){alert("먼저 A와 B 지점을 설정하세요.");return;}
+  looping=!looping;
+  if(looping) startMonitor(); else stopMonitor();
+}
+function clearLoop(){looping=false;B=null;stopMonitor();updateTimes();}
+function restartA(){if(player)player.seekTo(A,true);player.playVideo();}
+function restartVideo(){if(player){player.seekTo(0,true);player.playVideo();}}
+function playVideo(){if(player)player.playVideo()}
+function pauseVideo(){if(player)player.pauseVideo()}
+function seek(sec){if(player)player.seekTo(Math.max(0,player.getCurrentTime()+sec),true)}
+function setSpeed(s){
+  if(player) player.setPlaybackRate(s);
+  document.querySelectorAll(".speed button").forEach(b=>b.classList.remove("active"));
+  const buttons=document.querySelectorAll(".speed button");
+  buttons.forEach(b=>{if(b.textContent.trim()===s+"x")b.classList.add("active")});
+}
+function updateTimes(){
+  document.getElementById("aTime").textContent=format(A);
+  document.getElementById("bTime").textContent=B===null?"--:--":format(B);
+}
+function format(sec){
+  sec=Math.floor(sec||0);let m=Math.floor(sec/60),s=sec%60;
+  return m+":"+String(s).padStart(2,"0");
+}
+function saveSetting(){
+  if(!videoId){alert("먼저 영상을 불러오세요.");return;}
+  const item={videoId,A,B,note:document.getElementById("note").value, savedAt:new Date().toLocaleString()};
+  const list=JSON.parse(localStorage.getItem("myLoopSettings")||"[]");
+  list.unshift(item);localStorage.setItem("myLoopSettings",JSON.stringify(list.slice(0,20)));
+  renderSaved();
+}
+function renderSaved(){
+  const list=JSON.parse(localStorage.getItem("myLoopSettings")||"[]");
+  const box=document.getElementById("savedList");
+  if(!list.length){box.textContent="저장된 설정이 없습니다.";return;}
+  box.innerHTML=list.map((x,i)=>`
+    <div class="savedItem">
+      <span>${x.videoId} · ${format(x.A)} ~ ${x.B===null?"--:--":format(x.B)}<br>${escapeHtml(x.note||"")}</span>
+      <span><button onclick="restoreSetting(${i})">불러오기</button><button onclick="deleteSetting(${i})">삭제</button></span>
+    </div>`).join("");
+}
+function restoreSetting(i){
+  const list=JSON.parse(localStorage.getItem("myLoopSettings")||"[]"),x=list[i];
+  videoId=x.videoId;A=x.A;B=x.B;looping=false;
+  document.getElementById("url").value="https://www.youtube.com/watch?v="+videoId;
+  document.getElementById("note").value=x.note||"";
+  player.loadVideoById(videoId);updateTimes();
+}
+function deleteSetting(i){
+  const list=JSON.parse(localStorage.getItem("myLoopSettings")||"[]");
+  list.splice(i,1);localStorage.setItem("myLoopSettings",JSON.stringify(list));renderSaved();
+}
+function clearSaved(){
+  if(confirm("저장된 설정을 모두 삭제할까요?")){
+    localStorage.removeItem("myLoopSettings");renderSaved();
+  }
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
+  if(e.ctrlKey && e.key.toLowerCase()==="l"){e.preventDefault();toggleLoop()}
+  else if(e.ctrlKey && e.key.toLowerCase()==="p"){e.preventDefault();player.getPlayerState()===1?pauseVideo():playVideo()}
+  else if(e.ctrlKey && e.key.toLowerCase()==="b"){e.preventDefault();setA()}
+  else if(e.shiftKey && e.key.toLowerCase()==="b"){e.preventDefault();setB()}
+  else if(e.key.toLowerCase()==="j")seek(-5);
+  else if(e.key.toLowerCase()==="l")seek(5);
+  else if(e.key==="ArrowUp")setSpeed(Math.min(2,(player.getPlaybackRate()||1)+.25));
+  else if(e.key==="ArrowDown")setSpeed(Math.max(.25,(player.getPlaybackRate()||1)-.25));
+});
+
+renderSaved();
+</script>
+</body>
+</html>
