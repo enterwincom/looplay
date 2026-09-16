@@ -1,0 +1,70 @@
+/* 기본 표 스타일 */
+.shortcut-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 13px;
+}
+
+.shortcut-table th, 
+.shortcut-table td {
+  padding: 8px 10px;
+  border: 1px solid #e0e0e0;
+  text-align: center;
+}
+
+.shortcut-table th {
+  background-color: #f8f9fa;
+  color: #333;
+  font-weight: bold;
+}
+
+/* 단축키 키보드 스타일 */
+.shortcut-table kbd {
+  background-color: #f7f7f7;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+  color: #333;
+  display: inline-block;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 2px 5px;
+  white-space: nowrap;
+}
+
+/* ==========================================
+   모바일 반응형 스타일 (화면 폭 600px 이하)
+   ========================================== */
+@media (max-width: 600px) {
+  /* 4열 중 뒤쪽 2개 헤더 숨김 */
+  .shortcut-table th:nth-child(3),
+  .shortcut-table th:nth-child(4) {
+    display: none;
+  }
+
+  /* 각 행(tr)을 블록 단위로 배치하여 2열로 자동 변경 */
+  .shortcut-table tr {
+    display: flex;
+    flex-wrap: wrap;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .shortcut-table th,
+  .shortcut-table td {
+    box-sizing: border-box;
+    border: none;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  /* 헤더 셀 너비 50% 지정 */
+  .shortcut-table th:nth-child(1),
+  .shortcut-table th:nth-child(2) {
+    width: 50%;
+  }
+
+  /* 데이터 셀 너비 50% 지정 */
+  .shortcut-table td {
+    width: 50%;
+  }
+}
