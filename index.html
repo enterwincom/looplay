@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
-<title>My LoopTube - YouTube AB Loop</title>
+<title>Looplay - YouTube AB Loop</title>
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;width:100%;min-height:100%;font-family:Arial,"Noto Sans KR",sans-serif;background:#f5f6f8;color:#222}
@@ -16,20 +16,28 @@ input[type=text]{min-width:0;flex:1;padding:13px;border:1px solid #bbb;border-ra
 button{border:1px solid #aaa;background:#fff;border-radius:7px;padding:10px 13px;cursor:pointer;font-size:14px;min-height:42px}
 button:hover{background:#eee}
 .primary{background:#333;color:#fff;border-color:#333}
+.danger{background:#d9534f;color:#fff;border-color:#d43f3a}
+.danger:hover{background:#c9302c}
 .player{background:#111;border-radius:8px;overflow:hidden;width:100%}
 #player{width:100%;aspect-ratio:16/9}
 .controls,.saved{background:#fff;margin-top:14px;padding:16px;border-radius:8px}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
 .label{font-weight:700;min-width:65px}
 .time{font-variant-numeric:tabular-nums;background:#f0f1f3;padding:9px 10px;border-radius:5px;min-width:54px;text-align:center}
-.range{width:220px}
 .speed{display:flex;flex-wrap:wrap;gap:6px}
 .speed button.active{background:#333;color:#fff}
-.note{width:100%;min-height:90px;padding:10px;border:1px solid #ccc;border-radius:6px;resize:vertical;font-size:14px}
+.note{width:100%;min-height:60px;padding:10px;border:1px solid #ccc;border-radius:6px;resize:vertical;font-size:14px}
 .help{font-size:13px;color:#666;line-height:1.7}
-.savedItem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #eee}
-.savedItem>span:first-child{min-width:0;overflow-wrap:anywhere}
-.savedItem>span:last-child{display:flex;gap:5px;flex-shrink:0}
+
+/* 멀티 구간 아이템 스타일 */
+.savedItem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;margin-bottom:8px;border:1px solid #eee;border-radius:6px;background:#fafafa}
+.savedItem.active{border-color:#333;background:#f0f4ff}
+.savedItem-info{min-width:0;overflow-wrap:anywhere}
+.savedItem-title{font-weight:bold;margin-bottom:4px;color:#111}
+.savedItem-time{font-size:13px;color:#555}
+.savedItem-note{font-size:13px;color:#777;margin-top:4px}
+.savedItem-actions{display:flex;gap:5px;flex-shrink:0}
+
 @media(max-width:700px){
   header{padding:13px 14px}
   .brand{font-size:21px}.sub{font-size:12px}
@@ -46,8 +54,8 @@ button:hover{background:#eee}
   .speed{width:100%}.speed button{min-width:0}
   .note{font-size:14px}
   .savedItem{align-items:flex-start;flex-direction:column}
-  .savedItem>span:last-child{width:100%}
-  .savedItem>span:last-child button{flex:1}
+  .savedItem-actions{width:100%}
+  .savedItem-actions button{flex:1}
 }
 @media(max-width:420px){
   .inputbox{flex-direction:column}
@@ -60,7 +68,7 @@ button:hover{background:#eee}
   .row .speed{grid-column:1/-1}
   .speed{display:grid;grid-template-columns:repeat(3,1fr)}
   .speed button{width:100%}
-  .savedItem>span:last-child{display:grid;grid-template-columns:1fr 1fr}
+  .savedItem-actions{display:grid;grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
@@ -80,17 +88,17 @@ button:hover{background:#eee}
 
   <section class="controls">
     <div class="row">
-      <span class="label">구간</span>
+      <span class="label">구간 설정</span>
       <button onclick="setA()">A 설정</button>
       <span id="aTime" class="time">0:00</span>
       <button onclick="setB()">B 설정</button>
       <span id="bTime" class="time">0:00</span>
-      <button class="primary" onclick="toggleLoop()">AB 반복</button>
+      <button id="loopBtn" class="primary" onclick="toggleLoop()">AB 반복</button>
       <button onclick="clearLoop()">반복 해제</button>
     </div>
 
     <div class="row">
-      <span class="label">재생</span>
+      <span class="label">재생 제어</span>
       <button onclick="playVideo()">▶ 재생</button>
       <button onclick="pauseVideo()">Ⅱ 일시정지</button>
       <button onclick="restartA()">A부터</button>
@@ -98,7 +106,7 @@ button:hover{background:#eee}
     </div>
 
     <div class="row">
-      <span class="label">속도</span>
+      <span class="label">재생 속도</span>
       <div class="speed">
         <button onclick="setSpeed(.5)">0.5x</button>
         <button onclick="setSpeed(.75)">0.75x</button>
@@ -119,14 +127,20 @@ button:hover{background:#eee}
     </div>
 
     <div class="row">
-      <span class="label">메모</span>
-      <textarea id="note" class="note" placeholder="연습할 부분이나 메모를 입력하세요."></textarea>
+      <span class="label">구간 저장</span>
+      <input id="loopName" type="text" placeholder="구간 이름 (예: Intro, 후라이 코러스)" style="margin-bottom: 5px;">
+      <textarea id="note" class="note" placeholder="연습 메모 (선택사항)"></textarea>
+      <button class="primary" onclick="addLoop()" style="width:100%; margin-top:5px;">현재 A-B 구간 저장하기</button>
     </div>
+  </section>
 
-    <div class="row">
-      <button class="primary" onclick="saveSetting()">현재 설정 저장</button>
-      <button onclick="clearSaved()">저장된 설정 삭제</button>
+  <!-- 저장된 멀티 구간 목록 -->
+  <section class="saved">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <strong>저장된 멀티 구간 목록</strong>
+      <button class="danger" onclick="clearSaved()" style="min-height:30px; padding:4px 10px; font-size:12px;">전체 삭제</button>
     </div>
+    <div id="savedList" class="help">저장된 구간이 없습니다. A/B 설정 후 저장해보세요.</div>
   </section>
 
   <section class="saved">
@@ -140,11 +154,6 @@ button:hover{background:#eee}
       ↑ / ↓ : 재생속도 조절
     </div>
   </section>
-
-  <section class="saved">
-    <strong>저장된 설정</strong>
-    <div id="savedList" class="help">저장된 설정이 없습니다.</div>
-  </section>
 </main>
 
 <script src="https://www.youtube.com/iframe_api"></script>
@@ -155,6 +164,7 @@ let A = 0;
 let B = null;
 let looping = false;
 let timer = null;
+let currentLoopId = null;
 
 function extractId(url){
   try{
@@ -174,19 +184,45 @@ function extractId(url){
 }
 
 function onYouTubeIframeAPIReady(){
+  // URL 파라미터 체크 (공유 링크로 접속했을 때 자동 로드)
+  const params = new URLSearchParams(window.location.search);
+  const paramV = params.get('v');
+  const paramA = parseFloat(params.get('a'));
+  const paramB = parseFloat(params.get('b'));
+
+  const initialVideoId = paramV || "";
+
   player=new YT.Player("player",{
-    videoId:"",
+    videoId: initialVideoId,
     playerVars:{rel:0,playsinline:1},
-    events:{onStateChange:onStateChange}
+    events:{
+      onReady: (e) => {
+        if(paramV){
+          videoId = paramV;
+          document.getElementById("url").value = "https://www.youtube.com/watch?v=" + paramV;
+          if(!isNaN(paramA)) A = paramA;
+          if(!isNaN(paramB)) B = paramB;
+          updateTimes();
+          if(B !== null){
+            looping = true;
+            player.seekTo(A, true);
+            player.playVideo();
+            startMonitor();
+          }
+        }
+      },
+      onStateChange: onStateChange
+    }
   });
 }
 
 function loadVideo(){
   const id=extractId(document.getElementById("url").value.trim());
   if(!id){alert("올바른 YouTube URL을 입력하세요.");return;}
-  videoId=id; A=0; B=null; looping=false;
+  videoId=id; A=0; B=null; looping=false; currentLoopId=null;
   updateTimes();
   player.loadVideoById(id);
+  renderSaved();
 }
 
 function onStateChange(e){
@@ -210,8 +246,9 @@ function toggleLoop(){
   if(B===null){alert("먼저 A와 B 지점을 설정하세요.");return;}
   looping=!looping;
   if(looping) startMonitor(); else stopMonitor();
+  updateLoopBtnUI();
 }
-function clearLoop(){looping=false;B=null;stopMonitor();updateTimes();}
+function clearLoop(){looping=false;B=null;currentLoopId=null;stopMonitor();updateTimes();renderSaved();}
 function restartA(){if(player)player.seekTo(A,true);player.playVideo();}
 function restartVideo(){if(player){player.seekTo(0,true);player.playVideo();}}
 function playVideo(){if(player)player.playVideo()}
@@ -226,46 +263,156 @@ function setSpeed(s){
 function updateTimes(){
   document.getElementById("aTime").textContent=format(A);
   document.getElementById("bTime").textContent=B===null?"--:--":format(B);
+  updateLoopBtnUI();
+}
+function updateLoopBtnUI(){
+  const btn = document.getElementById("loopBtn");
+  if(looping){
+    btn.textContent = "반복 중지";
+    btn.classList.remove("primary");
+  } else {
+    btn.textContent = "AB 반복";
+    btn.classList.add("primary");
+  }
 }
 function format(sec){
   sec=Math.floor(sec||0);let m=Math.floor(sec/60),s=sec%60;
   return m+":"+String(s).padStart(2,"0");
 }
-function saveSetting(){
+
+/* --- 멀티 구간 저장 및 불러오기 --- */
+function addLoop(){
   if(!videoId){alert("먼저 영상을 불러오세요.");return;}
-  const item={videoId,A,B,note:document.getElementById("note").value, savedAt:new Date().toLocaleString()};
-  const list=JSON.parse(localStorage.getItem("myLoopSettings")||"[]");
-  list.unshift(item);localStorage.setItem("myLoopSettings",JSON.stringify(list.slice(0,20)));
+  if(B===null){alert("A와 B 구간을 먼저 설정해주세요.");return;}
+
+  const title = document.getElementById("loopName").value.trim() || `구간 (${format(A)} ~ ${format(B)})`;
+  const note = document.getElementById("note").value.trim();
+
+  const item = {
+    id: Date.now(),
+    videoId,
+    title,
+    A,
+    B,
+    note,
+    createdAt: new Date().toLocaleString()
+  };
+
+  const list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
+  list.unshift(item);
+  localStorage.setItem("myMultiLoops", JSON.stringify(list));
+
+  // 입력 필드 초기화 및 목록 갱신
+  document.getElementById("loopName").value = "";
+  document.getElementById("note").value = "";
   renderSaved();
 }
+
 function renderSaved(){
-  const list=JSON.parse(localStorage.getItem("myLoopSettings")||"[]");
-  const box=document.getElementById("savedList");
-  if(!list.length){box.textContent="저장된 설정이 없습니다.";return;}
-  box.innerHTML=list.map((x,i)=>`
-    <div class="savedItem">
-      <span>${x.videoId} · ${format(x.A)} ~ ${x.B===null?"--:--":format(x.B)}<br>${escapeHtml(x.note||"")}</span>
-      <span><button onclick="restoreSetting(${i})">불러오기</button><button onclick="deleteSetting(${i})">삭제</button></span>
-    </div>`).join("");
+  const list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
+  const box = document.getElementById("savedList");
+  
+  if(!list.length){
+    box.innerHTML = "저장된 구간이 없습니다. A/B 설정 후 저장해보세요.";
+    return;
+  }
+
+  box.innerHTML = list.map((x) => {
+    const isCurrent = currentLoopId === x.id;
+    return `
+      <div class="savedItem ${isCurrent ? 'active' : ''}">
+        <div class="savedItem-info">
+          <div class="savedItem-title">${escapeHtml(x.title)}</div>
+          <div class="savedItem-time">⏱ ${format(x.A)} ~ ${format(x.B)} (ID: ${x.videoId})</div>
+          ${x.note ? `<div class="savedItem-note">📝 ${escapeHtml(x.note)}</div>` : ''}
+        </div>
+        <div class="savedItem-actions">
+          <button class="primary" onclick="playSavedLoop(${x.id})">재생</button>
+          <button onclick="copyLoopShareLink(${x.id})">공유 링크</button>
+          <button onclick="copyEmbedCode(${x.id})">iframe 복사</button>
+          <button class="danger" onclick="deleteLoopItem(${x.id})">삭제</button>
+        </div>
+      </div>
+    `;
+  }).join("");
 }
-function restoreSetting(i){
-  const list=JSON.parse(localStorage.getItem("myLoopSettings")||"[]"),x=list[i];
-  videoId=x.videoId;A=x.A;B=x.B;looping=false;
-  document.getElementById("url").value="https://www.youtube.com/watch?v="+videoId;
-  document.getElementById("note").value=x.note||"";
-  player.loadVideoById(videoId);updateTimes();
+
+function playSavedLoop(id){
+  const list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
+  const target = list.find(x => x.id === id);
+  if(!target) return;
+
+  currentLoopId = target.id;
+  A = target.A;
+  B = target.B;
+
+  if(videoId !== target.videoId){
+    videoId = target.videoId;
+    document.getElementById("url").value = "https://www.youtube.com/watch?v=" + videoId;
+    player.loadVideoById(videoId);
+  }
+
+  updateTimes();
+  looping = true;
+  player.seekTo(A, true);
+  player.playVideo();
+  startMonitor();
+  renderSaved();
 }
-function deleteSetting(i){
-  const list=JSON.parse(localStorage.getItem("myLoopSettings")||"[]");
-  list.splice(i,1);localStorage.setItem("myLoopSettings",JSON.stringify(list));renderSaved();
+
+function deleteLoopItem(id){
+  let list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
+  list = list.filter(x => x.id !== id);
+  localStorage.setItem("myMultiLoops", JSON.stringify(list));
+  if(currentLoopId === id) currentLoopId = null;
+  renderSaved();
 }
+
 function clearSaved(){
-  if(confirm("저장된 설정을 모두 삭제할까요?")){
-    localStorage.removeItem("myLoopSettings");renderSaved();
+  if(confirm("저장된 모든 구간을 삭제하시겠습니까?")){
+    localStorage.removeItem("myMultiLoops");
+    currentLoopId = null;
+    renderSaved();
   }
 }
-function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
 
+/* --- 코드/링크 복사 기능 --- */
+function copyLoopShareLink(id){
+  const list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
+  const target = list.find(x => x.id === id);
+  if(!target) return;
+
+  const baseUrl = window.location.origin + window.location.pathname;
+  const shareUrl = `${baseUrl}?v=${target.videoId}&a=${target.A.toFixed(1)}&b=${target.B.toFixed(1)}`;
+
+  navigator.clipboard.writeText(shareUrl).then(() => {
+    alert("구간 반복 플레이어 공유 링크가 복사되었습니다!\n\n" + shareUrl);
+  }).catch(() => {
+    prompt("아래 링크를 복사하세요:", shareUrl);
+  });
+}
+
+function copyEmbedCode(id){
+  const list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
+  const target = list.find(x => x.id === id);
+  if(!target) return;
+
+  const startSec = Math.floor(target.A);
+  const endSec = Math.ceil(target.B);
+  const embedCode = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${target.videoId}?start=${startSec}&end=${endSec}&loop=1&playlist=${target.videoId}" frameborder="0" allowfullscreen></iframe>`;
+
+  navigator.clipboard.writeText(embedCode).then(() => {
+    alert("YouTube 공식 퍼가기(iframe) 코드가 복사되었습니다!");
+  }).catch(() => {
+    prompt("아래 iframe 코드를 복사하세요:", embedCode);
+  });
+}
+
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
+
+// 키보드 이벤트
 document.addEventListener("keydown",e=>{
   if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
   if(e.ctrlKey && e.key.toLowerCase()==="l"){e.preventDefault();toggleLoop()}
