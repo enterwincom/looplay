@@ -12,6 +12,7 @@ header{background:#fff;border-top:4px solid #333;border-bottom:1px solid #ddd;pa
 .brand{font-size:24px;font-weight:700}.sub{font-size:13px;color:#777;margin-top:4px}
 .container{width:100%;max-width:1050px;margin:0 auto;padding:20px}
 
+/* URL 입력 박스 7:3 비율 유지 */
 .inputbox{display:flex;gap:8px;margin-bottom:16px;width:100%;align-items:center}
 .inputbox input[type=text]{min-width:0;flex:7;padding:13px;border:1px solid #bbb;border-radius:7px;font-size:15px;width:70%}
 .inputbox button{min-width:0;flex:3;padding:10px 13px;cursor:pointer;font-size:14px;min-height:42px;transition:all 0.2s ease;white-space:nowrap;width:30%}
@@ -19,7 +20,6 @@ header{background:#fff;border-top:4px solid #333;border-bottom:1px solid #ddd;pa
 button{border:1px solid #aaa;background:#fff;border-radius:7px;padding:10px 13px;cursor:pointer;font-size:14px;min-height:42px;transition:all 0.2s ease}
 button:hover{background:#eee}
 
-/* primary 버튼 hover 시 배경 반전 및 글자색 검정(#222) 적용 */
 .primary{background:#333;color:#fff;border-color:#333}
 .primary:hover{background:#fff;color:#222;border-color:#333}
 
@@ -28,12 +28,31 @@ button:hover{background:#eee}
 .player{background:#111;border-radius:8px;overflow:hidden;width:100%;aspect-ratio:16/9}
 #player{width:100%;height:100%}
 .controls,.saved{background:#fff;margin-top:14px;padding:16px;border-radius:8px}
+
+/* 데스크톱 그리드 레이아웃 (55:45 비율 설정) */
+.controls-grid{display:flex;flex-direction:column;gap:12px}
+.controls-pair{display:flex;gap:16px;width:100%;align-items:center}
+.controls-pair .row-55{flex:55;width:55%;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.controls-pair .row-45{flex:45;width:45%;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
 .label{font-weight:700;min-width:65px}
 .time{font-variant-numeric:tabular-nums;background:#f0f1f3;padding:9px 10px;border-radius:5px;min-width:54px;text-align:center}
 .speed,.seek-group{display:flex;flex-wrap:wrap;gap:6px;flex:1}
 .speed button.active{background:#333;color:#fff}
 .help{font-size:13px;color:#666;line-height:1.7}
+
+/* 구간 이름 작성하기 입력창 높이 기존(59px)의 0.7배 적용 -> 약 42px */
+#loopName{
+  min-height:42px;
+  height:42px;
+  padding:8px 12px;
+  font-size:14px;
+  border:1px solid #bbb;
+  border-radius:7px;
+  margin-bottom:8px;
+  width:100%;
+}
 
 .saved-header{display:flex;align-items:center;margin-bottom:12px;gap:8px;width:100%}
 .saved-header strong{flex:7;width:70%;font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -53,6 +72,12 @@ button:hover{background:#eee}
 .shortcut-table th{background:#f9f9f9}
 kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:2px 5px;font-size:11px}
 
+/* 반응형 모바일/태블릿 레이아웃 */
+@media(max-width:768px){
+  .controls-pair{flex-direction:column;gap:12px;align-items:stretch}
+  .controls-pair .row-55, .controls-pair .row-45{width:100%;flex:none}
+}
+
 @media(max-width:700px){
   header{padding:13px 14px}
   .brand{font-size:21px}.sub{font-size:12px}
@@ -61,7 +86,7 @@ kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:2px 5px;font
   .inputbox input[type=text]{font-size:14px;padding:12px}
   .player{border-radius:5px}
   .controls,.saved{padding:12px;margin-top:10px;border-radius:6px}
-  .row{gap:6px;margin:8px 0}
+  .row,.controls-pair .row-55,.controls-pair .row-45{gap:6px;margin:8px 0}
   .label{width:100%;min-width:100%;font-size:13px;margin-bottom:1px}
   button{flex:1;min-width:0;padding:9px 4px;font-size:13px}
   .time{flex:0 0 auto}
@@ -74,8 +99,6 @@ kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:2px 5px;font
 
 @media(max-width:420px){
   button{min-height:38px}
-  .row{display:flex;flex-wrap:wrap}
-  .row .label{width:100%}
   .speed,.seek-group{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
   .speed{grid-template-columns:repeat(6,1fr)}
   .savedItem-actions{display:grid;grid-template-columns:1fr 1fr}
@@ -89,7 +112,7 @@ kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:2px 5px;font
 </header>
 
 <main class="container">
-  <!-- 1. URL 입력 박스 및 영상 불러오기 버튼 (7:3 비율) -->
+  <!-- URL 입력 박스 및 영상 불러오기 버튼 (7:3 비율) -->
   <div class="inputbox">
     <input id="url" type="text" placeholder="YouTube 영상 URL을 붙여넣으세요">
     <button class="primary" onclick="loadVideo()">영상 불러오기</button>
@@ -98,51 +121,60 @@ kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:2px 5px;font
   <div class="player"><div id="player"></div></div>
 
   <section class="controls">
-    <div class="row">
-      <span class="label">구간 설정</span>
-      <button onclick="setA()">A 설정</button>
-      <span id="aTime" class="time">0:00</span>
-      <button onclick="setB()">B 설정</button>
-      <span id="bTime" class="time">0:00</span>
-      <button id="loopBtn" class="primary" onclick="toggleLoop()">AB 반복</button>
-      <button onclick="clearLoop()">반복 해제</button>
-    </div>
+    <div class="controls-grid">
+      <!-- 1등 분할: 구간 설정(55%) + 재생 제어(45%) -->
+      <div class="controls-pair">
+        <div class="row-55">
+          <span class="label">구간 설정</span>
+          <button onclick="setA()">A 설정</button>
+          <span id="aTime" class="time">0:00</span>
+          <button onclick="setB()">B 설정</button>
+          <span id="bTime" class="time">0:00</span>
+          <button id="loopBtn" class="primary" onclick="toggleLoop()">AB 반복</button>
+          <button onclick="clearLoop()">반복 해제</button>
+        </div>
 
-    <div class="row">
-      <span class="label">재생 제어</span>
-      <button onclick="playVideo()">▶ 재생</button>
-      <button onclick="pauseVideo()">Ⅱ 일시정지</button>
-      <button onclick="restartA()">A부터</button>
-      <button onclick="restartVideo()">처음부터</button>
-    </div>
-
-    <div class="row">
-      <span class="label">재생 속도</span>
-      <div class="speed">
-        <button onclick="setSpeed(.5)">0.5x</button>
-        <button onclick="setSpeed(.75)">0.75x</button>
-        <button class="active" onclick="setSpeed(1)">1x</button>
-        <button onclick="setSpeed(1.25)">1.25x</button>
-        <button onclick="setSpeed(1.5)">1.5x</button>
-        <button onclick="setSpeed(2)">2x</button>
+        <div class="row-45">
+          <span class="label">재생 제어</span>
+          <button onclick="playVideo()">▶ 재생</button>
+          <button onclick="pauseVideo()">Ⅱ 일시정지</button>
+          <button onclick="restartA()">A부터</button>
+          <button onclick="restartVideo()">처음부터</button>
+        </div>
       </div>
-    </div>
 
-    <div class="row">
-      <span class="label">미세 이동</span>
-      <div class="seek-group">
-        <button onclick="seek(-5)">-5초</button>
-        <button onclick="seek(-1)">-1초</button>
-        <button onclick="seek(.5)">+0.5초</button>
-        <button onclick="seek(1)">+1초</button>
-        <button onclick="seek(5)">+5초</button>
+      <!-- 2등 분할: 재생 속도(55%) + 미세 이동(45%) -->
+      <div class="controls-pair">
+        <div class="row-55">
+          <span class="label">재생 속도</span>
+          <div class="speed">
+            <button onclick="setSpeed(.5)">0.5x</button>
+            <button onclick="setSpeed(.75)">0.75x</button>
+            <button class="active" onclick="setSpeed(1)">1x</button>
+            <button onclick="setSpeed(1.25)">1.25x</button>
+            <button onclick="setSpeed(1.5)">1.5x</button>
+            <button onclick="setSpeed(2)">2x</button>
+          </div>
+        </div>
+
+        <div class="row-45">
+          <span class="label">미세 이동</span>
+          <div class="seek-group">
+            <button onclick="seek(-5)">-5초</button>
+            <button onclick="seek(-1)">-1초</button>
+            <button onclick="seek(.5)">+0.5초</button>
+            <button onclick="seek(1)">+1초</button>
+            <button onclick="seek(5)">+5초</button>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="row" style="flex-direction:column;align-items:stretch">
-      <span class="label">구간 저장 (선택 사항)</span>
-      <input id="loopName" type="text" placeholder="구간 이름 작성하기 (예: Intro, 코러스)" style="margin-bottom: 6px;">
-      <button class="primary" onclick="addLoop()" style="width:100%;">현재 A-B 구간 저장하기</button>
+      <!-- 구간 저장 (0.7배 줄어든 높이: 42px) -->
+      <div class="row" style="flex-direction:column;align-items:stretch;margin-top:6px;">
+        <span class="label">구간 저장 (선택 사항)</span>
+        <input id="loopName" type="text" placeholder="구간 이름 작성하기 (예: Intro, 코러스)">
+        <button class="primary" onclick="addLoop()" style="width:100%;">현재 A-B 구간 저장하기</button>
+      </div>
     </div>
   </section>
 
@@ -312,6 +344,7 @@ function format(sec){
   return m+":"+String(s).padStart(2,"0");
 }
 
+/* --- 멀티 구간 저장 및 불러오기 --- */
 function addLoop(){
   if(!videoId){alert("먼저 영상을 불러오세요.");return;}
   if(B===null){alert("A와 B 구간을 먼저 설정해주세요.");return;}
