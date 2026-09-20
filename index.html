@@ -4,31 +4,40 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
 <title>Looplay - YouTube AB Loop</title>
-<link rel="stylesheet" href="style.css">
 <style>
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;width:100%;min-height:100%;font-family:Arial,"Noto Sans KR",sans-serif;background:#f5f6f8;color:#222}
 body{overflow-x:hidden}
-header{background:#fff;border-top:4px solid #333;border-bottom:1px solid #ddd;padding:14px 20px}
+header{background:#fff;border-top:4px solid #333;border-bottom:1px solid #ddd;padding:14px 20px;text-align:center;}
 .brand{font-size:24px;font-weight:700}.sub{font-size:13px;color:#777;margin-top:4px}
 .container{width:100%;max-width:1050px;margin:0 auto;padding:20px}
-.inputbox{display:flex;gap:8px;margin-bottom:16px}
-input[type=text]{min-width:0;flex:1;padding:13px;border:1px solid #bbb;border-radius:7px;font-size:15px}
-button{border:1px solid #aaa;background:#fff;border-radius:7px;padding:10px 13px;cursor:pointer;font-size:14px;min-height:42px}
+
+.inputbox{display:flex;gap:8px;margin-bottom:16px;width:100%;align-items:center}
+.inputbox input[type=text]{min-width:0;flex:7;padding:13px;border:1px solid #bbb;border-radius:7px;font-size:15px;width:70%}
+.inputbox button{min-width:0;flex:3;padding:10px 13px;cursor:pointer;font-size:14px;min-height:42px;transition:all 0.2s ease;white-space:nowrap;width:30%}
+
+button{border:1px solid #aaa;background:#fff;border-radius:7px;padding:10px 13px;cursor:pointer;font-size:14px;min-height:42px;transition:all 0.2s ease}
 button:hover{background:#eee}
+
+/* primary 버튼 hover 시 배경 반전 및 글자색 검정(#222) 적용 */
 .primary{background:#333;color:#fff;border-color:#333}
+.primary:hover{background:#fff;color:#222;border-color:#333}
+
 .danger{background:#d9534f;color:#fff;border-color:#d43f3a}
 .danger:hover{background:#c9302c}
-.player{background:#111;border-radius:8px;overflow:hidden;width:100%}
-#player{width:100%;aspect-ratio:16/9}
+.player{background:#111;border-radius:8px;overflow:hidden;width:100%;aspect-ratio:16/9}
+#player{width:100%;height:100%}
 .controls,.saved{background:#fff;margin-top:14px;padding:16px;border-radius:8px}
 .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
 .label{font-weight:700;min-width:65px}
 .time{font-variant-numeric:tabular-nums;background:#f0f1f3;padding:9px 10px;border-radius:5px;min-width:54px;text-align:center}
-.speed{display:flex;flex-wrap:wrap;gap:6px}
+.speed,.seek-group{display:flex;flex-wrap:wrap;gap:6px;flex:1}
 .speed button.active{background:#333;color:#fff}
-.note{width:100%;min-height:60px;padding:10px;border:1px solid #ccc;border-radius:6px;resize:vertical;font-size:14px}
 .help{font-size:13px;color:#666;line-height:1.7}
+
+.saved-header{display:flex;align-items:center;margin-bottom:12px;gap:8px;width:100%}
+.saved-header strong{flex:7;width:70%;font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.saved-header .saved-header-btn{flex:3;width:30%;min-height:36px;padding:6px 10px;font-size:13px;white-space:nowrap;min-width:0}
 
 /* 멀티 구간 아이템 스타일 */
 .savedItem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;margin-bottom:8px;border:1px solid #eee;border-radius:6px;background:#fafafa}
@@ -36,50 +45,51 @@ button:hover{background:#eee}
 .savedItem-info{min-width:0;overflow-wrap:anywhere}
 .savedItem-title{font-weight:bold;margin-bottom:4px;color:#111}
 .savedItem-time{font-size:13px;color:#555}
-.savedItem-note{font-size:13px;color:#777;margin-top:4px}
 .savedItem-actions{display:flex;gap:5px;flex-shrink:0}
+
+/* 단축키 테이블 스타일 */
+.shortcut-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+.shortcut-table th,.shortcut-table td{border:1px solid #eee;padding:8px;text-align:left}
+.shortcut-table th{background:#f9f9f9}
+kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:2px 5px;font-size:11px}
 
 @media(max-width:700px){
   header{padding:13px 14px}
   .brand{font-size:21px}.sub{font-size:12px}
   .container{padding:12px 10px}
   .inputbox{gap:6px}
-  input[type=text]{font-size:14px;padding:12px}
-  .inputbox button{padding:10px 11px;white-space:nowrap}
+  .inputbox input[type=text]{font-size:14px;padding:12px}
   .player{border-radius:5px}
   .controls,.saved{padding:12px;margin-top:10px;border-radius:6px}
   .row{gap:6px;margin:8px 0}
   .label{width:100%;min-width:100%;font-size:13px;margin-bottom:1px}
-  button{flex:1;min-width:75px;padding:9px 8px;font-size:13px}
+  button{flex:1;min-width:0;padding:9px 4px;font-size:13px}
   .time{flex:0 0 auto}
-  .speed{width:100%}.speed button{min-width:0}
-  .note{font-size:14px}
+  .speed,.seek-group{width:100%;display:flex;gap:4px;flex-wrap:nowrap}
+  .speed button,.seek-group button{flex:1;min-width:0;padding:8px 2px;font-size:12px;white-space:nowrap}
   .savedItem{align-items:flex-start;flex-direction:column}
   .savedItem-actions{width:100%}
   .savedItem-actions button{flex:1}
 }
+
 @media(max-width:420px){
-  .inputbox{flex-direction:column}
-  .inputbox button{width:100%}
-  button{min-height:40px}
-  .row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
-  .row .label{grid-column:1/-1}
-  .row .time{justify-self:start}
-  .row .note{grid-column:1/-1}
-  .row .speed{grid-column:1/-1}
-  .speed{display:grid;grid-template-columns:repeat(3,1fr)}
-  .speed button{width:100%}
+  button{min-height:38px}
+  .row{display:flex;flex-wrap:wrap}
+  .row .label{width:100%}
+  .speed,.seek-group{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+  .speed{grid-template-columns:repeat(6,1fr)}
   .savedItem-actions{display:grid;grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
 <body>
-<header style="background:#fff; border-top:4px solid #333; border-bottom:1px solid #ddd; padding:14px 20px; text-align:center;">
+<header>
   <div class="brand">↻ Looplay</div>
   <div class="sub">YouTube 영상을 원하는 구간으로 반복 연습하세요</div>
 </header>
 
 <main class="container">
+  <!-- 1. URL 입력 박스 및 영상 불러오기 버튼 (7:3 비율) -->
   <div class="inputbox">
     <input id="url" type="text" placeholder="YouTube 영상 URL을 붙여넣으세요">
     <button class="primary" onclick="loadVideo()">영상 불러오기</button>
@@ -120,26 +130,26 @@ button:hover{background:#eee}
 
     <div class="row">
       <span class="label">미세 이동</span>
-      <button onclick="seek(-5)">-5초</button>
-      <button onclick="seek(-1)">-1초</button>
-      <button onclick="seek(.5)">+0.5초</button>
-      <button onclick="seek(1)">+1초</button>
-      <button onclick="seek(5)">+5초</button>
+      <div class="seek-group">
+        <button onclick="seek(-5)">-5초</button>
+        <button onclick="seek(-1)">-1초</button>
+        <button onclick="seek(.5)">+0.5초</button>
+        <button onclick="seek(1)">+1초</button>
+        <button onclick="seek(5)">+5초</button>
+      </div>
     </div>
 
-    <div class="row">
-      <span class="label">구간 저장</span>
-      <input id="loopName" type="text" placeholder="구간 이름 (예: Intro, 코러스)" style="margin-bottom: 5px;">
-      <textarea id="note" class="note" placeholder="연습 메모 (선택사항)"></textarea>
-      <button class="primary" onclick="addLoop()" style="width:100%; margin-top:5px;">현재 A-B 구간 저장하기</button>
+    <div class="row" style="flex-direction:column;align-items:stretch">
+      <span class="label">구간 저장 (선택 사항)</span>
+      <input id="loopName" type="text" placeholder="구간 이름 작성하기 (예: Intro, 코러스)" style="margin-bottom: 6px;">
+      <button class="primary" onclick="addLoop()" style="width:100%;">현재 A-B 구간 저장하기</button>
     </div>
   </section>
 
-  <!-- 저장된 멀티 구간 목록 -->
   <section class="saved">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <div class="saved-header">
       <strong>저장된 멀티 구간 목록</strong>
-      <button class="danger" onclick="clearSaved()" style="min-height:30px; padding:4px 10px; font-size:12px;">전체 삭제</button>
+      <button class="danger saved-header-btn" onclick="clearSaved()">전체 삭제</button>
     </div>
     <div id="savedList" class="help">저장된 구간이 없습니다. A/B 설정 후 저장해보세요.</div>
   </section>
@@ -147,35 +157,35 @@ button:hover{background:#eee}
   <section class="saved">
     <strong>키보드 단축키</strong>
     <table class="shortcut-table">
-  <thead>
-    <tr>
-      <th>기능</th>
-      <th>단축키</th>
-      <th>기능</th>
-      <th>단축키</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>AB 반복 시작/해제</td>
-      <td><kbd>Ctrl</kbd> + <kbd>L</kbd></td>
-      <td>재생 / 일시정지</td>
-      <td><kbd>Ctrl</kbd> + <kbd>P</kbd></td>
-    </tr>
-    <tr>
-      <td>A 지점 설정</td>
-      <td><kbd>Ctrl</kbd> + <kbd>B</kbd></td>
-      <td>B 지점 설정</td>
-      <td><kbd>Shift</kbd> + <kbd>B</kbd></td>
-    </tr>
-    <tr>
-      <td>5초 뒤로 / 앞으로</td>
-      <td><kbd>J</kbd> / <kbd>L</kbd></td>
-      <td>재생속도 조절</td>
-      <td><kbd>↑</kbd> / <kbd>↓</kbd></td>
-    </tr>
-  </tbody>
-</table>
+      <thead>
+        <tr>
+          <th>기능</th>
+          <th>단축키</th>
+          <th>기능</th>
+          <th>단축키</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>AB 반복 시작/해제</td>
+          <td><kbd>Ctrl</kbd> + <kbd>L</kbd></td>
+          <td>재생 / 일시정지</td>
+          <td><kbd>Ctrl</kbd> + <kbd>P</kbd></td>
+        </tr>
+        <tr>
+          <td>A 지점 설정</td>
+          <td><kbd>Ctrl</kbd> + <kbd>B</kbd></td>
+          <td>B 지점 설정</td>
+          <td><kbd>Shift</kbd> + <kbd>B</kbd></td>
+        </tr>
+        <tr>
+          <td>5초 뒤로 / 앞으로</td>
+          <td><kbd>J</kbd> / <kbd>L</kbd></td>
+          <td>재생속도 조절</td>
+          <td><kbd>↑</kbd> / <kbd>↓</kbd></td>
+        </tr>
+      </tbody>
+    </table>
   </section>
 </main>
 
@@ -207,7 +217,6 @@ function extractId(url){
 }
 
 function onYouTubeIframeAPIReady(){
-  // URL 파라미터 체크 (공유 링크로 접속했을 때 자동 로드)
   const params = new URLSearchParams(window.location.search);
   const paramV = params.get('v');
   const paramA = parseFloat(params.get('a'));
@@ -303,13 +312,11 @@ function format(sec){
   return m+":"+String(s).padStart(2,"0");
 }
 
-/* --- 멀티 구간 저장 및 불러오기 --- */
 function addLoop(){
   if(!videoId){alert("먼저 영상을 불러오세요.");return;}
   if(B===null){alert("A와 B 구간을 먼저 설정해주세요.");return;}
 
   const title = document.getElementById("loopName").value.trim() || `구간 (${format(A)} ~ ${format(B)})`;
-  const note = document.getElementById("note").value.trim();
 
   const item = {
     id: Date.now(),
@@ -317,7 +324,6 @@ function addLoop(){
     title,
     A,
     B,
-    note,
     createdAt: new Date().toLocaleString()
   };
 
@@ -325,9 +331,7 @@ function addLoop(){
   list.unshift(item);
   localStorage.setItem("myMultiLoops", JSON.stringify(list));
 
-  // 입력 필드 초기화 및 목록 갱신
   document.getElementById("loopName").value = "";
-  document.getElementById("note").value = "";
   renderSaved();
 }
 
@@ -347,7 +351,6 @@ function renderSaved(){
         <div class="savedItem-info">
           <div class="savedItem-title">${escapeHtml(x.title)}</div>
           <div class="savedItem-time">⏱ ${format(x.A)} ~ ${format(x.B)} (ID: ${x.videoId})</div>
-          ${x.note ? `<div class="savedItem-note">📝 ${escapeHtml(x.note)}</div>` : ''}
         </div>
         <div class="savedItem-actions">
           <button class="primary" onclick="playSavedLoop(${x.id})">재생</button>
@@ -399,7 +402,6 @@ function clearSaved(){
   }
 }
 
-/* --- 코드/링크 복사 기능 --- */
 function copyLoopShareLink(id){
   const list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
   const target = list.find(x => x.id === id);
@@ -408,11 +410,13 @@ function copyLoopShareLink(id){
   const baseUrl = window.location.origin + window.location.pathname;
   const shareUrl = `${baseUrl}?v=${target.videoId}&a=${target.A.toFixed(1)}&b=${target.B.toFixed(1)}`;
 
-  navigator.clipboard.writeText(shareUrl).then(() => {
-    alert("구간 반복 플레이어 공유 링크가 복사되었습니다!\n\n" + shareUrl);
-  }).catch(() => {
-    prompt("아래 링크를 복사하세요:", shareUrl);
-  });
+  const tempInput = document.createElement("textarea");
+  tempInput.value = shareUrl;
+  document.body.appendChild(tempInput);
+  tempInput.select();
+  document.execCommand("copy");
+  document.body.removeChild(tempInput);
+  alert("구간 반복 플레이어 공유 링크가 복사되었습니다!\n\n" + shareUrl);
 }
 
 function copyEmbedCode(id){
@@ -424,18 +428,19 @@ function copyEmbedCode(id){
   const endSec = Math.ceil(target.B);
   const embedCode = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${target.videoId}?start=${startSec}&end=${endSec}&loop=1&playlist=${target.videoId}" frameborder="0" allowfullscreen></iframe>`;
 
-  navigator.clipboard.writeText(embedCode).then(() => {
-    alert("YouTube 공식 퍼가기(iframe) 코드가 복사되었습니다!");
-  }).catch(() => {
-    prompt("아래 iframe 코드를 복사하세요:", embedCode);
-  });
+  const tempInput = document.createElement("textarea");
+  tempInput.value = embedCode;
+  document.body.appendChild(tempInput);
+  tempInput.select();
+  document.execCommand("copy");
+  document.body.removeChild(tempInput);
+  alert("YouTube 공식 퍼가기(iframe) 코드가 복사되었습니다!");
 }
 
 function escapeHtml(s){
   return (s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 }
 
-// 키보드 이벤트
 document.addEventListener("keydown",e=>{
   if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
   if(e.ctrlKey && e.key.toLowerCase()==="l"){e.preventDefault();toggleLoop()}
