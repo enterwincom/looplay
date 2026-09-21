@@ -6,16 +6,34 @@
 <title>Looplay - YouTube AB Loop</title>
 <style>
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;width:100%;min-height:100%;font-family:Arial,"Noto Sans KR",sans-serif;background:#f5f6f8;color:#222}
+html,body{
+  margin:0;padding:0;width:100%;min-height:100%;
+  font-family:Arial,"Noto Sans KR",sans-serif;
+  background:#f5f6f8;color:#222;
+  -webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;
+}
 body{overflow-x:hidden}
 header{background:#fff;border-top:4px solid #333;border-bottom:1px solid #ddd;padding:14px 20px;text-align:center;}
 .brand{font-size:24px;font-weight:700}.sub{font-size:13px;color:#777;margin-top:4px}
 .container{width:100%;max-width:1050px;margin:0 auto;padding:20px}
 
 /* URL 입력 박스 7:3 비율 유지 */
-.inputbox{display:flex;gap:8px;margin-bottom:16px;width:100%;align-items:center}
-.inputbox input[type=text]{min-width:0;flex:7;padding:13px;border:1px solid #bbb;border-radius:7px;font-size:15px;width:70%}
+.inputbox{display:flex;gap:8px;margin-bottom:8px;width:100%;align-items:center}
+.inputbox input[type=text]{
+  min-width:0;flex:7;padding:13px;border:1px solid #bbb;border-radius:7px;font-size:15px;width:70%;
+  -webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text;
+}
 .inputbox button{min-width:0;flex:3;padding:10px 13px;cursor:pointer;font-size:14px;min-height:42px;transition:all 0.2s ease;white-space:nowrap;width:30%}
+
+/* 광고 관련 안내 문구 스타일 (가운데 정렬) */
+.ad-notice{
+  text-align:center;
+  font-size:13px;
+  color:#666;
+  margin-bottom:16px;
+  line-height:1.4;
+  word-break:keep-all;
+}
 
 button{border:1px solid #aaa;background:#fff;border-radius:7px;padding:10px 13px;cursor:pointer;font-size:14px;min-height:42px;transition:all 0.2s ease}
 button:hover{background:#eee}
@@ -42,7 +60,7 @@ button:hover{background:#eee}
 .speed button.active{background:#333;color:#fff}
 .help{font-size:13px;color:#666;line-height:1.7}
 
-/* 구간 이름 작성하기 입력창 높이 기존(59px)의 0.7배 적용 -> 약 42px */
+/* 구간 이름 작성하기 입력창 */
 #loopName{
   min-height:42px;
   height:42px;
@@ -52,6 +70,7 @@ button:hover{background:#eee}
   border-radius:7px;
   margin-bottom:8px;
   width:100%;
+  -webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text;
 }
 
 .saved-header{display:flex;align-items:center;margin-bottom:12px;gap:8px;width:100%}
@@ -82,7 +101,8 @@ kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:2px 5px;font
   header{padding:13px 14px}
   .brand{font-size:21px}.sub{font-size:12px}
   .container{padding:12px 10px}
-  .inputbox{gap:6px}
+  .inputbox{gap:6px;margin-bottom:6px}
+  .ad-notice{font-size:12px;margin-bottom:12px}
   .inputbox input[type=text]{font-size:14px;padding:12px}
   .player{border-radius:5px}
   .controls,.saved{padding:12px;margin-top:10px;border-radius:6px}
@@ -105,7 +125,7 @@ kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:2px 5px;font
 }
 </style>
 </head>
-<body>
+<body oncontextmenu="return false;" ondragstart="return false;" onselectstart="return false;">
 <header>
   <div class="brand">↻ Looplay</div>
   <div class="sub">YouTube 영상을 원하는 구간으로 반복 연습하세요</div>
@@ -117,6 +137,9 @@ kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:2px 5px;font
     <input id="url" type="text" placeholder="YouTube 영상 URL을 붙여넣으세요">
     <button class="primary" onclick="loadVideo()">영상 불러오기</button>
   </div>
+
+  <!-- URL 입력창 바로 아래 배치된 광고 관련 안내 문구 (가운데 정렬) -->
+  <div class="ad-notice">💡영상 속 광고는 유튜브 자체 광고이며, Looplay와는 무관합니다!</div>
 
   <div class="player"><div id="player"></div></div>
 
@@ -169,7 +192,7 @@ kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:2px 5px;font
         </div>
       </div>
 
-      <!-- 구간 저장 (0.7배 줄어든 높이: 42px) -->
+      <!-- 구간 저장 -->
       <div class="row" style="flex-direction:column;align-items:stretch;margin-top:6px;">
         <span class="label">구간 저장 (선택 사항)</span>
         <input id="loopName" type="text" placeholder="구간 이름 작성하기 (예: Intro, 코러스)">
@@ -474,7 +497,20 @@ function escapeHtml(s){
   return (s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
 }
 
-document.addEventListener("keydown",e=>{
+/* --- 소스 보기 / 드래그 / 단축키 차단 방지 코드 --- */
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+document.addEventListener("keydown", e => {
+  if (
+    e.key === "F12" ||
+    ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "u") ||
+    ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") ||
+    ((e.ctrlKey || e.metaKey) && e.shiftKey && ["i", "j", "c"].includes(e.key.toLowerCase()))
+  ) {
+    e.preventDefault();
+    return false;
+  }
+
   if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
   if(e.ctrlKey && e.key.toLowerCase()==="l"){e.preventDefault();toggleLoop()}
   else if(e.ctrlKey && e.key.toLowerCase()==="p"){e.preventDefault();player.getPlayerState()===1?pauseVideo():playVideo()}
