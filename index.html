@@ -1,377 +1,529 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Image Splitter</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <style>
-        :root {
-            --primary: #6366f1;
-            --bg-gradient: linear-gradient(135deg, #f0f4ff 0%, #f9f5ff 100%);
-            --card-bg: #ffffff;
-            --text-main: #1e293b;
-            --text-muted: #94a3b8;
-            --inner-bg: #f8fafc;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=yes">
+<title>Looplay - YouTube A-B Loop</title>
+<style>
+*{box-sizing:border-box}
+html,body{
+  margin:0;padding:0;width:100%;min-height:100%;
+  font-family:Arial,"Noto Sans KR",sans-serif;
+  background:#f5f6f8;color:#222;
+  -webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;
+}
+body{overflow-x:hidden}
+header{background:#fff;border-top:4px solid #333;border-bottom:1px solid #ddd;padding:14px 20px;text-align:center;}
+.brand{font-size:24px;font-weight:700}.sub{font-size:13px;color:#777;margin-top:4px}
+.container{width:100%;max-width:1050px;margin:0 auto;padding:20px}
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-        
-        body {
-            font-family: 'Pretendard', -apple-system, sans-serif;
-            background: var(--bg-gradient);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
-        }
+/* URL 입력 박스 7:3 비율 유지 */
+.inputbox{display:flex;gap:8px;margin-bottom:8px;width:100%;align-items:center}
+.inputbox input[type=text]{
+  min-width:0;flex:7;padding:13px;border:1px solid #bbb;border-radius:7px;font-size:15px;width:70%;
+  -webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text;
+}
+.inputbox button{min-width:0;flex:3;padding:10px 13px;cursor:pointer;font-size:14px;min-height:42px;transition:all 0.2s ease;white-space:nowrap;width:30%}
 
-        .app-container {
-            width: 100%;
-            max-width: 400px; /* 모바일 최적화 폭 */
-            background: var(--card-bg);
-            border-radius: 32px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-            padding: 32px 20px;
-        }
+/* 광고 관련 안내 문구 스타일 (가운데 정렬) */
+.ad-notice{
+  text-align:center;
+  font-size:13px;
+  color:#666;
+  margin-bottom:16px;
+  line-height:1.4;
+  word-break:keep-all;
+}
 
-        header { text-align: center; margin-bottom: 24px; }
-        header h1 { 
-            font-size: 2.2rem; 
-            background: linear-gradient(to right, #6366f1, #d946ef);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 800;
-        }
-        header p { color: var(--text-muted); font-size: 0.9rem; margin-top: 4px; }
+button{border:1px solid #aaa;background:#fff;border-radius:7px;padding:10px 13px;cursor:pointer;font-size:14px;min-height:42px;transition:all 0.2s ease}
+button:hover{background:#eee}
 
-        /* 업로드 영역 */
-        #drop-zone {
-            background: #fff;
-            border: 2px dashed #e2e8f0;
-            border-radius: 24px;
-            padding: 40px 10px;
-            text-align: center;
-            cursor: pointer;
-            margin-bottom: 20px;
-            transition: border-color 0.3s; /* 시각적 피드백을 위한 애니메이션 */
-        }
-        #drop-zone.dragover { /* 드래그 중일 때 스타일 */
-            border-color: var(--primary);
-            background-color: #f1f5f9;
-        }
-        .upload-icon { font-size: 32px; margin-bottom: 8px; display: block; }
+.primary{background:#333;color:#fff;border-color:#333}
+.primary:hover{background:#fff;color:#222;border-color:#333}
 
-        /* 설정 컨테이너 */
-        .settings-container {
-            background: var(--inner-bg);
-            border-radius: 24px;
-            padding: 16px;
-            margin-bottom: 20px;
-        }
+.danger{background:#d9534f;color:#fff;border-color:#d43f3a}
+.danger:hover{background:#c9302c}
+.player{background:#111;border-radius:8px;overflow:hidden;width:100%;aspect-ratio:16/9}
+#player{width:100%;height:100%}
+.controls,.saved{background:#fff;margin-top:14px;padding:16px;border-radius:8px}
 
-        .section-title {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            color: #64748b;
-            margin-bottom: 16px;
-        }
-        .section-title::before, .section-title::after {
-            content: ""; flex: 1; height: 1px; background: #e2e8f0;
-        }
+/* 데스크톱 그리드 레이아웃 (55:45 비율 설정) */
+.controls-grid{display:flex;flex-direction:column;gap:12px}
+.controls-pair{display:flex;gap:16px;width:100%;align-items:center}
+.controls-pair .row-55{flex:55;width:55%;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.controls-pair .row-45{flex:45;width:45%;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
-        .grid-wrapper {
-            display: flex; 
-            gap: 10px;
-            margin-bottom: 12px;
-        }
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+.label{font-weight:700;min-width:65px}
+.time{font-variant-numeric:tabular-nums;background:#f0f1f3;padding:9px 10px;border-radius:5px;min-width:54px;text-align:center}
+.speed,.seek-group{display:flex;flex-wrap:wrap;gap:6px;flex:1}
+.speed button.active{background:#333;color:#fff}
+.help{font-size:13px;color:#666;line-height:1.7}
 
-        .control-group {
-            flex: 1; 
-            background: #ffffff;
-            padding: 14px 4px;
-            border-radius: 18px;
-            text-align: center;
-            border: 1px solid #f1f5f9;
-            min-width: 0;
-        }
+/* 구간 이름 작성하기 입력창 */
+#loopName{
+  min-height:42px;
+  height:42px;
+  padding:8px 12px;
+  font-size:14px;
+  border:1px solid #bbb;
+  border-radius:7px;
+  margin-bottom:8px;
+  width:100%;
+  -webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text;
+}
 
-        .control-group b {
-            display: block;
-            font-size: 0.75rem;
-            color: #94a3b8;
-            margin-bottom: 8px;
-            white-space: nowrap;
-        }
+.saved-header{display:flex;align-items:center;margin-bottom:12px;gap:8px;width:100%}
+.saved-header strong{flex:7;width:70%;font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.saved-header .saved-header-btn{flex:3;width:30%;min-height:36px;padding:6px 10px;font-size:13px;white-space:nowrap;min-width:0}
 
-        .number-picker {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
+/* 멀티 구간 아이템 스타일 */
+.savedItem{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;margin-bottom:8px;border:1px solid #eee;border-radius:6px;background:#fafafa}
+.savedItem.active{border-color:#333;background:#f0f4ff}
+.savedItem-info{min-width:0;overflow-wrap:anywhere}
+.savedItem-title{font-weight:bold;margin-bottom:4px;color:#111}
+.savedItem-time{font-size:13px;color:#555}
+.savedItem-actions{display:flex;gap:5px;flex-shrink:0}
 
-        .number-picker input {
-            width: 32px;
-            border: none;
-            text-align: center;
-            font-size: 1.4rem;
-            font-weight: 800;
-            color: var(--text-main);
-            background: transparent;
-            outline: none;
-            -moz-appearance: textfield;
-        }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
-            -webkit-appearance: none; margin: 0;
-        }
+/* 단축키 테이블 스타일 */
+.shortcut-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:13px}
+.shortcut-table th,.shortcut-table td{border:1px solid #eee;padding:8px;text-align:left}
+.shortcut-table th{background:#f9f9f9}
+kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:2px 5px;font-size:11px}
 
-        .btn-step {
-            width: 28px;
-            height: 28px;
-            border: none;
-            background: #f1f5f9;
-            border-radius: 50%;
-            font-size: 1rem;
-            color: var(--primary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .btn-step:active { transform: scale(0.9); background: #e2e8f0; }
+/* 반응형 모바일/태블릿 레이아웃 */
+@media(max-width:768px){
+  .controls-pair{flex-direction:column;gap:12px;align-items:stretch}
+  .controls-pair .row-55, .controls-pair .row-45{width:100%;flex:none}
+}
 
-        /* 저장 품질 */
-        .quality-wrapper { position: relative; }
-        select {
-            width: 100%;
-            padding: 14px 16px;
-            border-radius: 14px;
-            border: 1px solid #e2e8f0;
-            appearance: none;
-            font-size: 0.9rem;
-            font-weight: 600;
-            background: white;
-            color: #475569;
-        }
-        .quality-wrapper::after {
-            content: '▾'; position: absolute; right: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8;
-        }
+@media(max-width:700px){
+  header{padding:13px 14px}
+  .brand{font-size:21px}.sub{font-size:12px}
+  .container{padding:12px 10px}
+  .inputbox{gap:6px;margin-bottom:6px}
+  .ad-notice{font-size:12px;margin-bottom:12px}
+  .inputbox input[type=text]{font-size:14px;padding:12px}
+  .player{border-radius:5px}
+  .controls,.saved{padding:12px;margin-top:10px;border-radius:6px}
+  .row,.controls-pair .row-55,.controls-pair .row-45{gap:6px;margin:8px 0}
+  .label{width:100%;min-width:100%;font-size:13px;margin-bottom:1px}
+  button{flex:1;min-width:0;padding:9px 4px;font-size:13px}
+  .time{flex:0 0 auto}
+  .speed,.seek-group{width:100%;display:flex;gap:4px;flex-wrap:nowrap}
+  .speed button,.seek-group button{flex:1;min-width:0;padding:8px 2px;font-size:12px;white-space:nowrap}
+  .savedItem{align-items:flex-start;flex-direction:column}
+  .savedItem-actions{width:100%}
+  .savedItem-actions button{flex:1}
+}
 
-        /* 메인 버튼 */
-        #splitBtn {
-            width: 100%;
-            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-            color: white;
-            border: none;
-            padding: 18px;
-            border-radius: 18px;
-            font-size: 1rem;
-            font-weight: 800;
-            box-shadow: 0 10px 20px -5px rgba(99, 102, 241, 0.4);
-            cursor: pointer;
-        }
-        #splitBtn:disabled { background: #cbd5e1; box-shadow: none; }
-
-        #preview-container { margin-top: 32px; display: none; }
-        #preview { display: grid; gap: 4px; background: #f1f5f9; padding: 6px; border-radius: 16px; }
-        #preview img { width: 100%; border-radius: 4px; display: block; }
-
-        footer { margin-top: 24px; text-align: center; font-size: 0.75rem; color: #94a3b8; }
-    </style>
+@media(max-width:420px){
+  button{min-height:38px}
+  .speed,.seek-group{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+  .speed{grid-template-columns:repeat(6,1fr)}
+  .savedItem-actions{display:grid;grid-template-columns:1fr 1fr}
+}
+</style>
 </head>
-<body oncontextmenu="return false">
+<body oncontextmenu="return false;" ondragstart="return false;" onselectstart="return false;">
+<header>
+  <div class="brand">↻ Looplay</div>
+  <div class="sub">YouTube 영상을 원하는 구간으로 반복 연습하세요</div>
+</header>
 
-<div class="app-container">
-    <header>
-        <h1>Image Splitter</h1>
-        <p>나만의 감성 피드 분할 도구</p>
-    </header>
-    
-    <!-- 업로드 영역에 드래그 이벤트 리스너가 추가될 예정입니다. -->
-    <div id="drop-zone" onclick="document.getElementById('imageInput').click()">
-        <span class="upload-icon">🖼️</span>
-        <p id="drop-text" style="font-weight: 700; color: #64748b; font-size: 0.9rem;">사진을 불러오거나 끌어다 놓으세요</p>
-        <div id="file-info" style="font-size: 0.85rem; color: var(--primary); margin-top: 4px; font-weight: 700;"></div>
-        <input type="file" id="imageInput" accept="image/*" style="display: none;">
-    </div>
+<main class="container">
+  <!-- URL 입력 박스 및 영상 불러오기 버튼 (7:3 비율) -->
+  <div class="inputbox">
+    <input id="url" type="text" placeholder="YouTube 영상 URL을 붙여넣으세요">
+    <button class="primary" onclick="loadVideo()">영상 불러오기</button>
+  </div>
 
-    <div class="settings-container">
-        <div class="section-title">칸 나누기 설정</div>
-        
-        <div class="grid-wrapper">
-            <div class="control-group">
-                <b>가로 줄 수</b>
-                <div class="number-picker">
-                    <button class="btn-step" onclick="step('rows', -1)">−</button>
-                    <input type="number" id="rows" value="1" readonly>
-                    <button class="btn-step" onclick="step('rows', 1)">+</button>
-                </div>
-            </div>
-            <div class="control-group">
-                <b>세로 칸 수</b>
-                <div class="number-picker">
-                    <button class="btn-step" onclick="step('cols', -1)">−</button>
-                    <input type="number" id="cols" value="3" readonly>
-                    <button class="btn-step" onclick="step('cols', 1)">+</button>
-                </div>
-            </div>
+  <!-- URL 입력창 바로 아래 배치된 광고 관련 안내 문구 (가운데 정렬) -->
+  <div class="ad-notice">💡영상 속 광고는 유튜브 자체 광고입니다! ▶️ 재생 버튼을 눌러주세요.</div>
+  <div class="ad-notice">💡 영상 속 광고는 유튜브 자체 광고입니다!</div>
+
+  <div class="player"><div id="player"></div></div>
+
+  <section class="controls">
+    <div class="controls-grid">
+      <!-- 1등 분할: 구간 설정(55%) + 재생 제어(45%) -->
+      <div class="controls-pair">
+        <div class="row-55">
+          <span class="label">구간 설정</span>
+          <button onclick="setA()">A 설정</button>
+          <span id="aTime" class="time">0:00</span>
+          <button onclick="setB()">B 설정</button>
+          <span id="bTime" class="time">0:00</span>
+          <button id="loopBtn" class="primary" onclick="toggleLoop()">A-B 반복</button>
+          <button onclick="clearLoop()">반복 해제</button>
         </div>
 
-        <div class="quality-wrapper">
-            <select id="quality">
-                <option value="1.0">저장 품질: 아주 높음</option>
-                <option value="0.9" selected>저장 품질: 높음 (추천)</option>
-                <option value="0.7">저장 품질: 보통</option>
-            </select>
+        <div class="row-45">
+          <span class="label">재생 제어</span>
+          <button onclick="playVideo()">▶ 재생</button>
+          <button onclick="pauseVideo()">Ⅱ 일시정지</button>
+          <button onclick="restartA()">A부터</button>
+          <button onclick="restartVideo()">처음부터</button>
         </div>
+      </div>
+
+      <!-- 2등 분할: 재생 속도(55%) + 미세 이동(45%) -->
+      <div class="controls-pair">
+        <div class="row-55">
+          <span class="label">재생 속도</span>
+          <div class="speed">
+            <button onclick="setSpeed(.5)">0.5x</button>
+            <button onclick="setSpeed(.75)">0.75x</button>
+            <button class="active" onclick="setSpeed(1)">1x</button>
+            <button onclick="setSpeed(1.25)">1.25x</button>
+            <button onclick="setSpeed(1.5)">1.5x</button>
+            <button onclick="setSpeed(2)">2x</button>
+          </div>
+        </div>
+
+        <div class="row-45">
+          <span class="label">미세 이동</span>
+          <div class="seek-group">
+            <button onclick="seek(-5)">-5초</button>
+            <button onclick="seek(-1)">-1초</button>
+            <button onclick="seek(.5)">+0.5초</button>
+            <button onclick="seek(1)">+1초</button>
+            <button onclick="seek(5)">+5초</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 구간 저장 -->
+      <div class="row" style="flex-direction:column;align-items:stretch;margin-top:6px;">
+        <span class="label">구간 저장 (선택 사항)</span>
+        <input id="loopName" type="text" placeholder="구간 이름 작성하기 (예: Intro, 코러스)">
+        <button class="primary" onclick="addLoop()" style="width:100%;">현재 A-B 구간 저장하기</button>
+      </div>
     </div>
+  </section>
 
-    <button id="splitBtn" onclick="splitAndDownload()">이미지 분할 후 저장하기</button>
-
-    <div id="preview-container">
-        <p style="text-align: center; font-weight: 700; margin-bottom: 8px; color: #64748b; font-size: 0.8rem;">분할 결과 미리보기</p>
-        <div id="preview"></div>
+  <section class="saved">
+    <div class="saved-header">
+      <strong>저장된 멀티 구간 목록</strong>
+      <button class="danger saved-header-btn" onclick="clearSaved()">전체 삭제</button>
     </div>
+    <div id="savedList" class="help">저장된 구간이 없습니다. A/B 설정 후 저장해보세요.</div>
+  </section>
 
-    <footer>© 2026 Image Splitter All rights reserved.</footer>
-</div>
+  <section class="saved">
+    <strong>키보드 단축키</strong>
+    <table class="shortcut-table">
+      <thead>
+        <tr>
+          <th>기능</th>
+          <th>단축키</th>
+          <th>기능</th>
+          <th>단축키</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>AB 반복 시작/해제</td>
+          <td><kbd>Ctrl</kbd> + <kbd>L</kbd></td>
+          <td>재생 / 일시정지</td>
+          <td><kbd>Ctrl</kbd> + <kbd>P</kbd></td>
+        </tr>
+        <tr>
+          <td>A 지점 설정</td>
+          <td><kbd>Ctrl</kbd> + <kbd>B</kbd></td>
+          <td>B 지점 설정</td>
+          <td><kbd>Shift</kbd> + <kbd>B</kbd></td>
+        </tr>
+        <tr>
+          <td>5초 뒤로 / 앞으로</td>
+          <td><kbd>J</kbd> / <kbd>L</kbd></td>
+          <td>재생속도 조절</td>
+          <td><kbd>↑</kbd> / <kbd>↓</kbd></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</main>
 
+<script src="https://www.youtube.com/iframe_api"></script>
 <script>
-    let selectedFile = null;
-    let currentImgElement = null;
+let player;
+let videoId = "";
+let A = 0;
+let B = null;
+let looping = false;
+let timer = null;
+let currentLoopId = null;
 
-    function step(id, val) {
-        const input = document.getElementById(id);
-        const nextVal = parseInt(input.value) + val;
-        if (nextVal >= 1 && nextVal <= 20) {
-            input.value = nextVal;
-            if (selectedFile) updatePreview();
-        }
+function extractId(url){
+  try{
+    const u = new URL(url);
+    if(u.hostname.includes("youtu.be")) return u.pathname.substring(1).split("/")[0];
+    if(u.hostname.includes("youtube.com")){
+      if(u.searchParams.get("v")) return u.searchParams.get("v");
+      const parts=u.pathname.split("/");
+      const i=parts.indexOf("embed");
+      if(i>=0) return parts[i+1];
+      const s=parts.indexOf("shorts");
+      if(s>=0) return parts[s+1];
     }
+  }catch(e){}
+  const m=url.match(/[?&]v=([^&]+)/);
+  return m ? m[1] : null;
+}
 
-    const imageInput = document.getElementById('imageInput');
-    const dropZone = document.getElementById('drop-zone');
+function onYouTubeIframeAPIReady(){
+  const params = new URLSearchParams(window.location.search);
+  const paramV = params.get('v');
+  const paramA = parseFloat(params.get('a'));
+  const paramB = parseFloat(params.get('b'));
 
-    // [수정 포인트] 파일 처리 로직을 함수로 분리
-    function handleFile(file) {
-        if (!file || !file.type.startsWith('image/')) {
-            alert('이미지 파일만 업로드 가능합니다.');
-            return;
+  const initialVideoId = paramV || "";
+
+  player=new YT.Player("player",{
+    videoId: initialVideoId,
+    playerVars:{rel:0,playsinline:1},
+    events:{
+      onReady: (e) => {
+        if(paramV){
+          videoId = paramV;
+          document.getElementById("url").value = "https://www.youtube.com/watch?v=" + paramV;
+          if(!isNaN(paramA)) A = paramA;
+          if(!isNaN(paramB)) B = paramB;
+          updateTimes();
+          if(B !== null){
+            looping = true;
+            player.seekTo(A, true);
+            player.playVideo();
+            startMonitor();
+          }
         }
-        selectedFile = file;
-        document.getElementById('file-info').innerText = selectedFile.name;
-        document.getElementById('drop-text').style.display = 'none';
-        updatePreview();
+      },
+      onStateChange: onStateChange
     }
+  });
+}
 
-    // [수정 포인트] 파일 드래그 앤 드롭 이벤트 리스너 추가
-    
-    // 드래그해서 영역 위에 있을 때
-    dropZone.addEventListener('dragover', (e) => {
-        e.preventDefault(); // 파일이 새 탭에서 열리는 것을 방지
-        e.stopPropagation();
-        dropZone.classList.add('dragover');
-    });
+function loadVideo(){
+  const id=extractId(document.getElementById("url").value.trim());
+  if(!id){alert("올바른 YouTube URL을 입력하세요.");return;}
+  videoId=id; A=0; B=null; looping=false; currentLoopId=null;
+  updateTimes();
+  player.loadVideoById(id);
+  renderSaved();
+}
 
-    // 드래그해서 영역을 벗어났을 때
-    dropZone.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropZone.classList.remove('dragover');
-    });
+function onStateChange(e){
+  if(e.data===YT.PlayerState.PLAYING) startMonitor();
+  else stopMonitor();
+}
 
-    // 파일을 영역 위에 놓았을 때
-    dropZone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropZone.classList.remove('dragover');
-        
-        const files = e.dataTransfer.files;
-        if (files.length) {
-            handleFile(files[0]);
-        }
-    });
+function startMonitor(){
+  stopMonitor();
+  timer=setInterval(()=>{
+    if(!player || !looping || B===null) return;
+    const t=player.getCurrentTime();
+    if(t>=B) player.seekTo(A,true);
+  },100);
+}
+function stopMonitor(){if(timer){clearInterval(timer);timer=null}}
 
-    // 클릭해서 파일 업로드 (기존 방식)
-    imageInput.addEventListener('change', (e) => {
-        if (e.target.files.length) {
-            handleFile(e.target.files[0]);
-        }
-    });
+function setA(){if(!player)return; A=player.getCurrentTime(); if(B!==null && A>=B)B=null; updateTimes();}
+function setB(){if(!player)return; B=player.getCurrentTime(); if(B<=A){alert("B 지점은 A 지점보다 뒤에 있어야 합니다.");B=null;} updateTimes();}
+function toggleLoop(){
+  if(B===null){alert("먼저 A와 B 지점을 설정하세요.");return;}
+  looping=!looping;
+  if(looping) startMonitor(); else stopMonitor();
+  updateLoopBtnUI();
+}
+function clearLoop(){looping=false;B=null;currentLoopId=null;stopMonitor();updateTimes();renderSaved();}
+function restartA(){if(player)player.seekTo(A,true);player.playVideo();}
+function restartVideo(){if(player){player.seekTo(0,true);player.playVideo();}}
+function playVideo(){if(player)player.playVideo()}
+function pauseVideo(){if(player)player.pauseVideo()}
+function seek(sec){if(player)player.seekTo(Math.max(0,player.getCurrentTime()+sec),true)}
+function setSpeed(s){
+  if(player) player.setPlaybackRate(s);
+  document.querySelectorAll(".speed button").forEach(b=>b.classList.remove("active"));
+  const buttons=document.querySelectorAll(".speed button");
+  buttons.forEach(b=>{if(b.textContent.trim()===s+"x")b.classList.add("active")});
+}
+function updateTimes(){
+  document.getElementById("aTime").textContent=format(A);
+  document.getElementById("bTime").textContent=B===null?"--:--":format(B);
+  updateLoopBtnUI();
+}
+function updateLoopBtnUI(){
+  const btn = document.getElementById("loopBtn");
+  if(looping){
+    btn.textContent = "반복 중지";
+    btn.classList.remove("primary");
+  } else {
+    btn.textContent = "A-B 반복";
+    btn.classList.add("primary");
+  }
+}
+function format(sec){
+  sec=Math.floor(sec||0);let m=Math.floor(sec/60),s=sec%60;
+  return m+":"+String(s).padStart(2,"0");
+}
 
-    function updatePreview() {
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(selectedFile);
-        img.src = objectUrl;
-        img.onload = () => {
-            currentImgElement = img;
-            renderTiles(false);
-            URL.revokeObjectURL(objectUrl);
-        };
-    }
+/* --- 멀티 구간 저장 및 불러오기 --- */
+function addLoop(){
+  if(!videoId){alert("먼저 영상을 불러오세요.");return;}
+  if(B===null){alert("A와 B 구간을 먼저 설정해주세요.");return;}
 
-    async function renderTiles(isDownload = false) {
-        if (!currentImgElement) return;
-        const rows = parseInt(document.getElementById('rows').value);
-        const cols = parseInt(document.getElementById('cols').value);
-        const preview = document.getElementById('preview');
-        const zip = isDownload ? new JSZip() : null;
-        
-        preview.innerHTML = '';
-        preview.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-        document.getElementById('preview-container').style.display = 'block';
+  const title = document.getElementById("loopName").value.trim() || `구간 (${format(A)} ~ ${format(B)})`;
 
-        const tw = currentImgElement.width / cols;
-        const th = currentImgElement.height / rows;
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
+  const item = {
+    id: Date.now(),
+    videoId,
+    title,
+    A,
+    B,
+    createdAt: new Date().toLocaleString()
+  };
 
-        for (let r = 0; r < rows; r++) {
-            for (let c = 0; c < cols; c++) {
-                canvas.width = tw; canvas.height = th;
-                ctx.drawImage(currentImgElement, c * tw, r * th, tw, th, 0, 0, tw, th);
-                const dataUrl = canvas.toDataURL('image/jpeg', parseFloat(document.getElementById('quality').value));
-                
-                if (!isDownload) {
-                    const imgTag = document.createElement('img');
-                    imgTag.src = dataUrl;
-                    preview.appendChild(imgTag);
-                } else {
-                    zip.file(`part_${r+1}_${c+1}.jpg`, dataUrl.split(',')[1], {base64: true});
-                }
-            }
-        }
+  const list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
+  list.unshift(item);
+  localStorage.setItem("myMultiLoops", JSON.stringify(list));
 
-        if (isDownload) {
-            const content = await zip.generateAsync({type:"blob"});
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(content);
-            link.download = `split_images.zip`;
-            link.click();
-        }
-    }
+  document.getElementById("loopName").value = "";
+  renderSaved();
+}
 
-    async function splitAndDownload() {
-        if (!selectedFile) return alert("사진을 먼저 선택해주세요!");
-        const btn = document.getElementById('splitBtn');
-        btn.innerText = "처리 중...";
-        btn.disabled = true;
-        try {
-            await renderTiles(true);
-        } finally {
-            btn.innerText = "이미지 분할 후 저장하기";
-            btn.disabled = false;
-        }
-    }
+function renderSaved(){
+  const list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
+  const box = document.getElementById("savedList");
+
+  if(!list.length){
+    box.innerHTML = "저장된 구간이 없습니다. A/B 설정 후 저장해보세요.";
+    return;
+  }
+
+  box.innerHTML = list.map((x) => {
+    const isCurrent = currentLoopId === x.id;
+    return `
+      <div class="savedItem ${isCurrent ? 'active' : ''}">
+        <div class="savedItem-info">
+          <div class="savedItem-title">${escapeHtml(x.title)}</div>
+          <div class="savedItem-time">⏱ ${format(x.A)} ~ ${format(x.B)} (ID: ${x.videoId})</div>
+        </div>
+        <div class="savedItem-actions">
+          <button class="primary" onclick="playSavedLoop(${x.id})">재생</button>
+          <button onclick="copyLoopShareLink(${x.id})">공유 링크</button>
+          <button onclick="copyEmbedCode(${x.id})">iframe 복사</button>
+          <button class="danger" onclick="deleteLoopItem(${x.id})">삭제</button>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function playSavedLoop(id){
+  const list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
+  const target = list.find(x => x.id === id);
+  if(!target) return;
+
+  currentLoopId = target.id;
+  A = target.A;
+  B = target.B;
+
+  if(videoId !== target.videoId){
+    videoId = target.videoId;
+    document.getElementById("url").value = "https://www.youtube.com/watch?v=" + videoId;
+    player.loadVideoById(videoId);
+  }
+
+  updateTimes();
+  looping = true;
+  player.seekTo(A, true);
+  player.playVideo();
+  startMonitor();
+  renderSaved();
+}
+
+function deleteLoopItem(id){
+  let list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
+  list = list.filter(x => x.id !== id);
+  localStorage.setItem("myMultiLoops", JSON.stringify(list));
+  if(currentLoopId === id) currentLoopId = null;
+  renderSaved();
+}
+
+function clearSaved(){
+  if(confirm("저장된 모든 구간을 삭제하시겠습니까?")){
+    localStorage.removeItem("myMultiLoops");
+    currentLoopId = null;
+    renderSaved();
+  }
+}
+
+function copyLoopShareLink(id){
+  const list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
+  const target = list.find(x => x.id === id);
+  if(!target) return;
+
+  const baseUrl = window.location.origin + window.location.pathname;
+  const shareUrl = `${baseUrl}?v=${target.videoId}&a=${target.A.toFixed(1)}&b=${target.B.toFixed(1)}`;
+
+  const tempInput = document.createElement("textarea");
+  tempInput.value = shareUrl;
+  document.body.appendChild(tempInput);
+  tempInput.select();
+  document.execCommand("copy");
+  document.body.removeChild(tempInput);
+  alert("구간 반복 플레이어 공유 링크가 복사되었습니다!\n\n" + shareUrl);
+}
+
+function copyEmbedCode(id){
+  const list = JSON.parse(localStorage.getItem("myMultiLoops")||"[]");
+  const target = list.find(x => x.id === id);
+  if(!target) return;
+
+  const startSec = Math.floor(target.A);
+  const endSec = Math.ceil(target.B);
+  const embedCode = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${target.videoId}?start=${startSec}&end=${endSec}&loop=1&playlist=${target.videoId}" frameborder="0" allowfullscreen></iframe>`;
+
+  const tempInput = document.createElement("textarea");
+  tempInput.value = embedCode;
+  document.body.appendChild(tempInput);
+  tempInput.select();
+  document.execCommand("copy");
+  document.body.removeChild(tempInput);
+  alert("YouTube 공식 퍼가기(iframe) 코드가 복사되었습니다!");
+}
+
+function escapeHtml(s){
+  return (s||"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
+
+/* --- 소스 보기 / 드래그 / 단축키 차단 방지 코드 --- */
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+document.addEventListener("keydown", e => {
+  if (
+    e.key === "F12" ||
+    ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "u") ||
+    ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") ||
+    ((e.ctrlKey || e.metaKey) && e.shiftKey && ["i", "j", "c"].includes(e.key.toLowerCase()))
+  ) {
+    e.preventDefault();
+    return false;
+  }
+
+  if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
+  if(e.ctrlKey && e.key.toLowerCase()==="l"){e.preventDefault();toggleLoop()}
+  else if(e.ctrlKey && e.key.toLowerCase()==="p"){e.preventDefault();player.getPlayerState()===1?pauseVideo():playVideo()}
+  else if(e.ctrlKey && e.key.toLowerCase()==="b"){e.preventDefault();setA()}
+  else if(e.shiftKey && e.key.toLowerCase()==="b"){e.preventDefault();setB()}
+  else if(e.key.toLowerCase()==="j")seek(-5);
+  else if(e.key.toLowerCase()==="l")seek(5);
+  else if(e.key==="ArrowUp")setSpeed(Math.min(2,(player.getPlaybackRate()||1)+.25));
+  else if(e.key==="ArrowDown")setSpeed(Math.max(.25,(player.getPlaybackRate()||1)-.25));
+});
+
+renderSaved();
 </script>
-
 </body>
 </html>
