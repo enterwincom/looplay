@@ -291,15 +291,13 @@ function onYouTubeIframeAPIReady(){
           if(!isNaN(paramB)) B = paramB;
           updateTimes();
           
-          // 파라미터(a 또는 b)가 존재하면 즉시 반복 모드 활성화
           if(!isNaN(paramA) || !isNaN(paramB)){
             looping = true;
             updateLoopBtnUI();
             player.seekTo(A, true);
             player.playVideo();
             startMonitor();
-            // 플레이어가 준비된 직후 전체 길이를 반영하여 주소창 완성
-            setTimeout(updateUrlQuery, 500);
+            setTimeout(updateUrlQuery, 600);
           }
         }
       },
@@ -313,14 +311,26 @@ function loadVideo(){
   if(!id){alert("올바른 YouTube URL을 입력하세요.");return;}
   videoId=id; A=0; B=null; looping=false; currentLoopId=null;
   updateTimes();
-  player.loadVideoById(id);
-  updateUrlQuery();
+  
+  if(player && typeof player.loadVideoById === "function"){
+    player.loadVideoById(id);
+  }
+  
+  // 영상 로드 안전 지연 후 주소창 갱신
+  setTimeout(() => {
+    updateUrlQuery();
+  }, 600);
+  
   renderSaved();
 }
 
 function onStateChange(e){
-  if(e.data===YT.PlayerState.PLAYING) startMonitor();
-  else stopMonitor();
+  if(e.data===YT.PlayerState.PLAYING){
+    startMonitor();
+    updateUrlQuery(); // 재생될 때 주소창 안전하게 동기화
+  } else {
+    stopMonitor();
+  }
 }
 
 function startMonitor(){
@@ -329,12 +339,12 @@ function startMonitor(){
     if(!player || !looping) return;
     const t = player.getCurrentTime();
     let endTime = B;
-    if(endTime === null && player && player.getDuration){
-      endTime = player.getDuration();
+    if(endTime === null && player && typeof player.getDuration === "function"){
+      const dur = player.getDuration();
+      if(dur && dur > 0) endTime = dur;
     }
     
-    // 끝점에 도달했거나 거의 끝에 도달했을 때 A 지점으로 이동
-    if(endTime > 0 && t >= endTime - 0.2){
+    if(endTime && endTime > 0 && t >= endTime - 0.2){
       player.seekTo(A, true);
     }
   },100);
@@ -406,13 +416,13 @@ function updateLoopBtnUI(){
   }
 }
 
-/* 주소창(URL) 실시간 반영 함수 */
+/* 주소창(URL) 실시간 반영 함수 (안전성 강화) */
 function updateUrlQuery(){
-  if(!videoId) return;
+  if(!videoId || !player || typeof player.getDuration !== "function") return;
   let targetB = B;
-  // B가 설정되지 않았을 때 영상 전체 길이를 b에 자동 할당
-  if(targetB === null && player && player.getDuration){
-    targetB = player.getDuration();
+  if(targetB === null){
+    const dur = player.getDuration();
+    if(dur && dur > 0) targetB = dur;
   }
   
   const baseUrl = window.location.origin + window.location.pathname;
@@ -434,10 +444,11 @@ function addLoop(){
   if(!videoId){alert("먼저 영상을 불러오세요.");return;}
   
   let targetB = B;
-  if(targetB === null && player && player.getDuration){
-    targetB = player.getDuration();
+  if(targetB === null && player && typeof player.getDuration === "function"){
+    const dur = player.getDuration();
+    if(dur && dur > 0) targetB = dur;
   }
-  if(targetB === null){alert("영상의 길이를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.");return;}
+  if(!targetB){alert("영상의 길이를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.");return;}
 
   const title = document.getElementById("loopName").value.trim() || `구간 (${format(A)} ~ ${format(targetB)})`;
 
@@ -506,7 +517,7 @@ function playSavedLoop(id){
   player.seekTo(A, true);
   player.playVideo();
   startMonitor();
-  updateUrlQuery();
+  setTimeout(updateUrlQuery, 600);
   renderSaved();
 }
 
