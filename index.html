@@ -288,17 +288,18 @@ function onYouTubeIframeAPIReady(){
           videoId = paramV;
           document.getElementById("url").value = "https://www.youtube.com/watch?v=" + paramV;
           if(!isNaN(paramA)) A = paramA;
-          if(!isNaN(paramB)) B = paramB; // b 파라미터가 있으면 B값으로 복원
+          if(!isNaN(paramB)) B = paramB;
           updateTimes();
           
-          // 링크에 a 또는 b 파라미터가 존재하면 곧바로 반복 모드 켜기
+          // 파라미터(a 또는 b)가 존재하면 즉시 반복 모드 활성화
           if(!isNaN(paramA) || !isNaN(paramB)){
             looping = true;
             updateLoopBtnUI();
             player.seekTo(A, true);
             player.playVideo();
             startMonitor();
-            updateUrlQuery();
+            // 플레이어가 준비된 직후 전체 길이를 반영하여 주소창 완성
+            setTimeout(updateUrlQuery, 500);
           }
         }
       },
@@ -416,7 +417,7 @@ function updateUrlQuery(){
   
   const baseUrl = window.location.origin + window.location.pathname;
   let newUrl = `${baseUrl}?v=${videoId}&a=${A.toFixed(1)}`;
-  if(targetB !== null && !isNaN(targetB)){
+  if(targetB !== null && !isNaN(targetB) && targetB > 0){
     newUrl += `&b=${targetB.toFixed(1)}`;
   }
   
