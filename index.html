@@ -152,7 +152,7 @@ kbd{background:#eee;border:1px solid #ccc;border-radius:3px;padding:2px 5px;font
           <button onclick="setA()">A 설정</button>
           <span id="aTime" class="time">0:00</span>
           <button onclick="setB()">B 설정</button>
-          <span id="bTime" class="time">--:--</span>
+          <span id="bTime" class="time">0:00</span>
           <button id="loopBtn" class="primary" onclick="toggleLoop()">A-B 반복</button>
           <button onclick="clearLoop()">반복 해제</button>
         </div>
@@ -290,14 +290,11 @@ function onYouTubeIframeAPIReady(){
           if(!isNaN(paramA)) A = paramA;
           if(!isNaN(paramB)) B = paramB;
           updateTimes();
-          
-          if(!isNaN(paramA) || !isNaN(paramB)){
+          if(B !== null){
             looping = true;
-            updateLoopBtnUI();
             player.seekTo(A, true);
             player.playVideo();
             startMonitor();
-            setTimeout(updateUrlQuery, 600);
           }
         }
       },
@@ -311,100 +308,50 @@ function loadVideo(){
   if(!id){alert("올바른 YouTube URL을 입력하세요.");return;}
   videoId=id; A=0; B=null; looping=false; currentLoopId=null;
   updateTimes();
-  
-  if(player && typeof player.loadVideoById === "function"){
-    player.loadVideoById(id);
-  }
-  
-  // 영상 로드 안전 지연 후 주소창 갱신
-  setTimeout(() => {
-    updateUrlQuery();
-  }, 600);
-  
+  player.loadVideoById(id);
   renderSaved();
 }
 
 function onStateChange(e){
-  if(e.data===YT.PlayerState.PLAYING){
-    startMonitor();
-    updateUrlQuery(); // 재생될 때 주소창 안전하게 동기화
-  } else {
-    stopMonitor();
-  }
+  if(e.data===YT.PlayerState.PLAYING) startMonitor();
+  else stopMonitor();
 }
 
 function startMonitor(){
   stopMonitor();
   timer=setInterval(()=>{
-    if(!player || !looping) return;
-    const t = player.getCurrentTime();
-    let endTime = B;
-    if(endTime === null && player && typeof player.getDuration === "function"){
-      const dur = player.getDuration();
-      if(dur && dur > 0) endTime = dur;
-    }
-    
-    if(endTime && endTime > 0 && t >= endTime - 0.2){
-      player.seekTo(A, true);
-    }
+    if(!player || !looping || B===null) return;
+    const t=player.getCurrentTime();
+    if(t>=B) player.seekTo(A,true);
   },100);
 }
 function stopMonitor(){if(timer){clearInterval(timer);timer=null}}
 
-function setA(){
-  if(!player)return; 
-  A=player.getCurrentTime(); 
-  if(B!==null && A>=B) B=null; 
-  updateTimes();
-  updateUrlQuery();
-}
-
-function setB(){
-  if(!player)return; 
-  B=player.getCurrentTime(); 
-  if(B<=A){alert("B 지점은 A 지점보다 뒤에 있어야 합니다.");B=null;} 
-  updateTimes();
-  updateUrlQuery();
-}
-
+function setA(){if(!player)return; A=player.getCurrentTime(); if(B!==null && A>=B)B=null; updateTimes();}
+function setB(){if(!player)return; B=player.getCurrentTime(); if(B<=A){alert("B 지점은 A 지점보다 뒤에 있어야 합니다.");B=null;} updateTimes();}
 function toggleLoop(){
-  if(!player) return;
-  
-  looping = !looping;
+  if(B===null){alert("먼저 A와 B 지점을 설정하세요.");return;}
+  looping=!looping;
   if(looping) startMonitor(); else stopMonitor();
   updateLoopBtnUI();
-  updateUrlQuery();
 }
-
-function clearLoop(){
-  looping=false;
-  B=null;
-  currentLoopId=null;
-  stopMonitor();
-  updateTimes();
-  updateUrlQuery();
-  renderSaved();
-}
-
+function clearLoop(){looping=false;B=null;currentLoopId=null;stopMonitor();updateTimes();renderSaved();}
 function restartA(){if(player)player.seekTo(A,true);player.playVideo();}
 function restartVideo(){if(player){player.seekTo(0,true);player.playVideo();}}
 function playVideo(){if(player)player.playVideo()}
 function pauseVideo(){if(player)player.pauseVideo()}
 function seek(sec){if(player)player.seekTo(Math.max(0,player.getCurrentTime()+sec),true)}
-
 function setSpeed(s){
   if(player) player.setPlaybackRate(s);
   document.querySelectorAll(".speed button").forEach(b=>b.classList.remove("active"));
   const buttons=document.querySelectorAll(".speed button");
   buttons.forEach(b=>{if(b.textContent.trim()===s+"x")b.classList.add("active")});
 }
-
 function updateTimes(){
   document.getElementById("aTime").textContent=format(A);
   document.getElementById("bTime").textContent=B===null?"--:--":format(B);
   updateLoopBtnUI();
 }
-
 function updateLoopBtnUI(){
   const btn = document.getElementById("loopBtn");
   if(looping){
@@ -415,25 +362,6 @@ function updateLoopBtnUI(){
     btn.classList.add("primary");
   }
 }
-
-/* 주소창(URL) 실시간 반영 함수 (안전성 강화) */
-function updateUrlQuery(){
-  if(!videoId || !player || typeof player.getDuration !== "function") return;
-  let targetB = B;
-  if(targetB === null){
-    const dur = player.getDuration();
-    if(dur && dur > 0) targetB = dur;
-  }
-  
-  const baseUrl = window.location.origin + window.location.pathname;
-  let newUrl = `${baseUrl}?v=${videoId}&a=${A.toFixed(1)}`;
-  if(targetB !== null && !isNaN(targetB) && targetB > 0){
-    newUrl += `&b=${targetB.toFixed(1)}`;
-  }
-  
-  window.history.replaceState({}, '', newUrl);
-}
-
 function format(sec){
   sec=Math.floor(sec||0);let m=Math.floor(sec/60),s=sec%60;
   return m+":"+String(s).padStart(2,"0");
@@ -442,22 +370,16 @@ function format(sec){
 /* --- 멀티 구간 저장 및 불러오기 --- */
 function addLoop(){
   if(!videoId){alert("먼저 영상을 불러오세요.");return;}
-  
-  let targetB = B;
-  if(targetB === null && player && typeof player.getDuration === "function"){
-    const dur = player.getDuration();
-    if(dur && dur > 0) targetB = dur;
-  }
-  if(!targetB){alert("영상의 길이를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.");return;}
+  if(B===null){alert("A와 B 구간을 먼저 설정해주세요.");return;}
 
-  const title = document.getElementById("loopName").value.trim() || `구간 (${format(A)} ~ ${format(targetB)})`;
+  const title = document.getElementById("loopName").value.trim() || `구간 (${format(A)} ~ ${format(B)})`;
 
   const item = {
     id: Date.now(),
     videoId,
     title,
     A,
-    B: targetB,
+    B,
     createdAt: new Date().toLocaleString()
   };
 
@@ -517,7 +439,6 @@ function playSavedLoop(id){
   player.seekTo(A, true);
   player.playVideo();
   startMonitor();
-  setTimeout(updateUrlQuery, 600);
   renderSaved();
 }
 
@@ -584,7 +505,7 @@ document.addEventListener("keydown", e => {
     e.key === "F12" ||
     ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "u") ||
     ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") ||
-    ((e.ctrlKey || e.shiftKey) && ["i", "j", "c"].includes(e.key.toLowerCase()))
+    ((e.ctrlKey || e.metaKey) && e.shiftKey && ["i", "j", "c"].includes(e.key.toLowerCase()))
   ) {
     e.preventDefault();
     return false;
