@@ -290,11 +290,12 @@ function onYouTubeIframeAPIReady(){
           if(!isNaN(paramA)) A = paramA;
           if(!isNaN(paramB)) B = paramB;
           updateTimes();
-          if(B !== null){
+          if(paramB !== null && !isNaN(paramB)){
             looping = true;
             player.seekTo(A, true);
             player.playVideo();
             startMonitor();
+            updateUrlQuery();
           }
         }
       },
@@ -309,6 +310,7 @@ function loadVideo(){
   videoId=id; A=0; B=null; looping=false; currentLoopId=null;
   updateTimes();
   player.loadVideoById(id);
+  updateUrlQuery();
   renderSaved();
 }
 
@@ -322,7 +324,6 @@ function startMonitor(){
   timer=setInterval(()=>{
     if(!player || !looping) return;
     const t = player.getCurrentTime();
-    // B가 설정되어 있지 않으면 영상의 전체 길이(getDuration())를 끝점으로 간주
     const endTime = (B !== null) ? B : (player.getDuration ? player.getDuration() : 0);
     
     if(endTime > 0 && t >= endTime){
@@ -332,40 +333,65 @@ function startMonitor(){
 }
 function stopMonitor(){if(timer){clearInterval(timer);timer=null}}
 
-function setA(){if(!player)return; A=player.getCurrentTime(); if(B!==null && A>=B)B=null; updateTimes();}
-function setB(){if(!player)return; B=player.getCurrentTime(); if(B<=A){alert("B 지점은 A 지점보다 뒤에 있어야 합니다.");B=null;} updateTimes();}
+function setA(){
+  if(!player)return; 
+  A=player.getCurrentTime(); 
+  if(B!==null && A>=B) B=null; 
+  updateTimes();
+  updateUrlQuery();
+}
+
+function setB(){
+  if(!player)return; 
+  B=player.getCurrentTime(); 
+  if(B<=A){alert("B 지점은 A 지점보다 뒤에 있어야 합니다.");B=null;} 
+  updateTimes();
+  updateUrlQuery();
+}
 
 function toggleLoop(){
   if(!player) return;
   
-  // A-B 구간 설정이 없을 경우 처음부터 끝까지 전체 반복 모드로 설정
   if(B === null){
-    A = 0; // 시작점을 0초로 설정
+    A = 0;
     updateTimes();
   }
 
   looping = !looping;
   if(looping) startMonitor(); else stopMonitor();
   updateLoopBtnUI();
+  updateUrlQuery();
 }
 
-function clearLoop(){looping=false;B=null;currentLoopId=null;stopMonitor();updateTimes();renderSaved();}
+function clearLoop(){
+  looping=false;
+  B=null;
+  currentLoopId=null;
+  stopMonitor();
+  updateTimes();
+  updateUrlQuery();
+  renderSaved();
+}
+
 function restartA(){if(player)player.seekTo(A,true);player.playVideo();}
 function restartVideo(){if(player){player.seekTo(0,true);player.playVideo();}}
 function playVideo(){if(player)player.playVideo()}
 function pauseVideo(){if(player)player.pauseVideo()}
 function seek(sec){if(player)player.seekTo(Math.max(0,player.getCurrentTime()+sec),true)}
+
 function setSpeed(s){
   if(player) player.setPlaybackRate(s);
   document.querySelectorAll(".speed button").forEach(b=>b.classList.remove("active"));
   const buttons=document.querySelectorAll(".speed button");
   buttons.forEach(b=>{if(b.textContent.trim()===s+"x")b.classList.add("active")});
 }
+
 function updateTimes(){
   document.getElementById("aTime").textContent=format(A);
   document.getElementById("bTime").textContent=B===null?"--:--":format(B);
   updateLoopBtnUI();
 }
+
 function updateLoopBtnUI(){
   const btn = document.getElementById("loopBtn");
   if(looping){
@@ -376,6 +402,24 @@ function updateLoopBtnUI(){
     btn.classList.add("primary");
   }
 }
+
+/* 주소창(URL) 실시간 반영 함수 */
+function updateUrlQuery(){
+  if(!videoId) return;
+  let targetB = B;
+  if(targetB === null && player && player.getDuration){
+    targetB = player.getDuration();
+  }
+  
+  const baseUrl = window.location.origin + window.location.pathname;
+  let newUrl = `${baseUrl}?v=${videoId}&a=${A.toFixed(1)}`;
+  if(targetB !== null && !isNaN(targetB)){
+    newUrl += `&b=${targetB.toFixed(1)}`;
+  }
+  
+  window.history.replaceState({}, '', newUrl);
+}
+
 function format(sec){
   sec=Math.floor(sec||0);let m=Math.floor(sec/60),s=sec%60;
   return m+":"+String(s).padStart(2,"0");
@@ -384,16 +428,21 @@ function format(sec){
 /* --- 멀티 구간 저장 및 불러오기 --- */
 function addLoop(){
   if(!videoId){alert("먼저 영상을 불러오세요.");return;}
-  if(B===null){alert("A와 B 구간을 먼저 설정해주세요.");return;}
+  
+  let targetB = B;
+  if(targetB === null && player && player.getDuration){
+    targetB = player.getDuration();
+  }
+  if(targetB === null){alert("영상의 길이를 불러올 수 없습니다. 잠시 후 다시 시도해주세요.");return;}
 
-  const title = document.getElementById("loopName").value.trim() || `구간 (${format(A)} ~ ${format(B)})`;
+  const title = document.getElementById("loopName").value.trim() || `구간 (${format(A)} ~ ${format(targetB)})`;
 
   const item = {
     id: Date.now(),
     videoId,
     title,
     A,
-    B,
+    B: targetB,
     createdAt: new Date().toLocaleString()
   };
 
@@ -453,6 +502,7 @@ function playSavedLoop(id){
   player.seekTo(A, true);
   player.playVideo();
   startMonitor();
+  updateUrlQuery();
   renderSaved();
 }
 
